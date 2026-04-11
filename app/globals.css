@@ -1,0 +1,116 @@
+@import "tailwindcss";
+
+@plugin "tailwindcss-animate";
+
+@custom-variant dark (&:is(.dark *));
+@custom-variant data-horizontal (&[data-orientation=horizontal]);
+@custom-variant data-vertical (&[data-orientation=vertical]);
+@custom-variant data-active (&[data-state=active], &[data-selected]);
+
+@theme {
+  --font-sans: var(--font-sans);
+  --font-display: var(--font-display);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+}
+
+:root {
+  --background: #fff5f7;
+  --foreground: #4a1525;
+
+  --card: #ffffff;
+  --card-foreground: #4a1525;
+
+  --popover: #ffffff;
+  --popover-foreground: #4a1525;
+
+  --primary: #ff8fa3;
+  --primary-foreground: #ffffff;
+
+  --secondary: #ffccd5;
+  --secondary-foreground: #4a1525;
+
+  --muted: #ffe5ec;
+  --muted-foreground: #8a4b5d;
+
+  --accent: #ffb3c1;
+  --accent-foreground: #4a1525;
+
+  --destructive: #ff4d4f;
+  --destructive-foreground: #ffffff;
+
+  --border: #ffccd5;
+  --input: #ffccd5;
+  --ring: #ff8fa3;
+
+  --radius: 1rem;
+}
+
+.dark {
+  --background: #2b121a;
+  --foreground: #ffe5ec;
+
+  --card: #3d1c26;
+  --card-foreground: #ffe5ec;
+
+  --popover: #3d1c26;
+  --popover-foreground: #ffe5ec;
+
+  --primary: #ff8fa3;
+  --primary-foreground: #2b121a;
+
+  --secondary: #5c2b39;
+  --secondary-foreground: #ffe5ec;
+
+  --muted: #4a222e;
+  --muted-foreground: #ffccd5;
+
+  --accent: #5c2b39;
+  --accent-foreground: #ffe5ec;
+
+  --destructive: #ff4d4f;
+  --destructive-foreground: #ffffff;
+
+  --border: #5c2b39;
+  --input: #5c2b39;
+  --ring: #ff8fa3;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
