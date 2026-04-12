@@ -6,13 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
-import { CalendarDays, Mail, Send } from "lucide-react";
+import { Mail, Send } from "lucide-react";
 import { toast } from "sonner";
-import { format } from "date-fns";
-import { vi } from "date-fns/locale";
 
 type ContactPayload = {
   name: string;
@@ -26,11 +21,8 @@ type ContactPayload = {
 
 export function ContactSection() {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [deadlineDate, setDeadlineDate] = useState<Date | undefined>(undefined);
   const formRef = useRef<HTMLFormElement | null>(null);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const formattedDeadline = deadlineDate ? format(deadlineDate, "dd/MM/yyyy", { locale: vi }) : "";
+  const todayIso = new Date().toISOString().slice(0, 10);
 
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -44,12 +36,20 @@ export function ContactSection() {
       return;
     }
     const formData = new FormData(form);
+    const rawDeadline = String(formData.get("deadline") ?? "");
+    const normalizedDeadline = rawDeadline
+      ? (() => {
+          const [year, month, day] = rawDeadline.split("-");
+          if (!year || !month || !day) return rawDeadline;
+          return `${day}/${month}/${year}`;
+        })()
+      : "";
     const payload: ContactPayload = {
       name: String(formData.get("name") ?? ""),
       email: String(formData.get("email") ?? ""),
       organization: String(formData.get("organization") ?? ""),
       budget: String(formData.get("budget") ?? ""),
-      deadline: String(formData.get("deadline") ?? ""),
+      deadline: normalizedDeadline,
       message: String(formData.get("message") ?? ""),
       company: String(formData.get("company") ?? ""),
     };
@@ -69,7 +69,6 @@ export function ContactSection() {
 
       toast.success("Đã gửi tin nhắn! RF sẽ phản hồi sớm.");
       form.reset();
-      setDeadlineDate(undefined);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Lỗi không xác định";
       toast.error(message);
@@ -119,29 +118,13 @@ export function ContactSection() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="deadline">Deadline mong muốn</Label>
-                  <input type="hidden" name="deadline" value={formattedDeadline} />
-                  <Popover>
-                    <PopoverTrigger
-                      type="button"
-                      className={cn(
-                        "flex h-8 w-full items-center justify-between rounded-xl border border-input bg-white/50 px-3 text-sm transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
-                        !formattedDeadline && "text-muted-foreground"
-                      )}
-                    >
-                      <span>{formattedDeadline || "Chọn ngày mong muốn"}</span>
-                      <CalendarDays className="size-4 text-muted-foreground" />
-                    </PopoverTrigger>
-                    <PopoverContent align="start" className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={deadlineDate}
-                        onSelect={(date) => setDeadlineDate(date ?? undefined)}
-                        disabled={{ before: today }}
-                        locale={vi}
-                        className="rounded-lg"
-                      />
-                    </PopoverContent>
-                  </Popover>
+                  <Input
+                    id="deadline"
+                    name="deadline"
+                    type="date"
+                    min={todayIso}
+                    className="bg-white/50 rounded-xl"
+                  />
                 </div>
               </div>
 
