@@ -226,10 +226,10 @@ export function ReleaseSchedule() {
                     month: "w-auto",
                     month_caption: "relative flex h-(--cell-size) w-full items-center justify-center px-8 text-center",
                     nav: "absolute inset-x-0 top-1/2 flex w-full -translate-y-1/2 items-center justify-between",
-                    table: "w-auto mt-2 mx-auto",
-                    weekdays: "flex w-auto justify-center",
+                    table: "w-full mt-2 mx-auto",
+                    weekdays: "flex w-full justify-center gap-x-1.5",
                     weekday: "flex-1 text-center text-xs tracking-wide",
-                    week: "flex w-auto justify-center mt-2",
+                    week: "flex w-full justify-center gap-x-1.5 mt-2",
                     day: "flex-1",
                   }}
                   modifiers={{ hasRelease: releaseDates }}
