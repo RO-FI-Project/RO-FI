@@ -10,52 +10,19 @@ import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { getDefaultClassNames, type DayButton, type Locale } from "react-day-picker";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
 
 type ReleaseStatus = "planning" | "teaser" | "scheduled" | "released";
 
 type ReleaseItem = {
-  id: number;
+  id: string;
   date: Date;
   title: string;
-  type: "Single" | "EP" | "Album" | "MV" | "Cover";
+  type: string;
   status: ReleaseStatus;
   description: string;
 };
-
-const releases: ReleaseItem[] = [
-  {
-    id: 1,
-    date: new Date("2026-05-15"),
-    title: "Sakura Dreams",
-    type: "Single",
-    status: "scheduled",
-    description: "Single mở màn mùa hè với vibe anime dịu ngọt.",
-  },
-  {
-    id: 2,
-    date: new Date("2026-07-10"),
-    title: "Neon Nights",
-    type: "EP",
-    status: "teaser",
-    description: "EP synthwave đậm chất cyberpop, mở teaser vào đầu tháng 7.",
-  },
-  {
-    id: 3,
-    date: new Date("2026-09-22"),
-    title: "Autumn Leaves",
-    type: "Cover",
-    status: "planning",
-    description: "Cover acoustic bài hát anime kinh điển.",
-  },
-  {
-    id: 4,
-    date: new Date("2026-12-01"),
-    title: "Winter Melancholy",
-    type: "Album",
-    status: "planning",
-    description: "Album full-length đầu tay, hiện đang trong giai đoạn sản xuất.",
-  },
-];
 
 const statusLabels: Record<ReleaseStatus, string> = {
   planning: "Planning",
@@ -72,7 +39,21 @@ const statusStyles: Record<ReleaseStatus, string> = {
 };
 
 export function ReleaseSchedule() {
-  const [selectedDay, setSelectedDay] = useState<Date | undefined>(releases[0]?.date);
+  const releaseData = useQuery(api.releases.listPublic, { year: 2026 });
+  const releases = useMemo<ReleaseItem[]>(
+    () =>
+      (releaseData ?? []).map((release) => ({
+        id: release._id,
+        date: new Date(release.releaseDate),
+        title: release.title,
+        type: release.type,
+        status: (release.status as ReleaseStatus) ?? "planning",
+        description: release.description,
+      })),
+    [releaseData]
+  );
+  const [selectedDay, setSelectedDay] = useState<Date | undefined>(undefined);
+  const effectiveSelectedDay = selectedDay ?? releases[0]?.date;
 
   const releaseMap = useMemo(() => {
     const map = new Map<string, ReleaseItem[]>();
@@ -83,10 +64,10 @@ export function ReleaseSchedule() {
       map.set(key, items);
     });
     return map;
-  }, []);
+  }, [releases]);
 
-  const releaseDates = useMemo(() => releases.map((release) => release.date), []);
-  const selectedKey = selectedDay ? format(selectedDay, "yyyy-MM-dd") : "";
+  const releaseDates = useMemo(() => releases.map((release) => release.date), [releases]);
+  const selectedKey = effectiveSelectedDay ? format(effectiveSelectedDay, "yyyy-MM-dd") : "";
   const selectedReleases = selectedKey ? releaseMap.get(selectedKey) ?? [] : [];
 
   return (
@@ -107,7 +88,7 @@ export function ReleaseSchedule() {
             <CardContent className="pt-6">
               <Calendar
                 mode="single"
-                selected={selectedDay}
+                selected={effectiveSelectedDay}
                 onSelect={(day) => setSelectedDay(day ?? undefined)}
                 locale={vi}
                 modifiers={{ hasRelease: releaseDates }}
@@ -127,7 +108,7 @@ export function ReleaseSchedule() {
                 <div className="flex items-center justify-between">
                   <h3 className="font-display text-xl font-semibold flex items-center gap-2">
                     <Disc3 className="w-5 h-5 text-primary" />
-                    {selectedDay ? format(selectedDay, "dd MMMM yyyy", { locale: vi }) : "Chọn một ngày"}
+                    {effectiveSelectedDay ? format(effectiveSelectedDay, "dd MMMM yyyy", { locale: vi }) : "Chọn một ngày"}
                   </h3>
                   <Badge className="rounded-full px-3">Release</Badge>
                 </div>

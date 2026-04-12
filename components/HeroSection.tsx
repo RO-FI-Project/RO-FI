@@ -1,7 +1,14 @@
+"use client";
+
 import { buttonVariants } from "@/components/ui/button";
 import { Heart, Music } from "lucide-react";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
 
 export function HeroSection() {
+  const settings = useQuery(api.siteSettings.getPublic);
+  const heroSubtitle = settings?.heroSubtitle ?? "Artist hub cho cộng đồng yêu nhạc & anime";
+
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-background pt-16">
       <div className="absolute inset-0 flex flex-col justify-between p-4 md:p-8 pointer-events-none z-0 select-none overflow-hidden">
@@ -15,7 +22,7 @@ export function HeroSection() {
 
       <div className="absolute top-24 right-4 md:top-32 md:right-12 max-w-[220px] text-right z-10 hidden md:block">
         <p className="text-xs font-bold uppercase tracking-widest text-foreground/50">
-          Artist hub cho cộng đồng yêu nhạc & anime
+          {heroSubtitle}
         </p>
       </div>
 

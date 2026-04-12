@@ -8,9 +8,13 @@
  * @module
  */
 
+import type * as adminAudit from "../adminAudit.js";
 import type * as contact from "../contact.js";
 import type * as donations from "../donations.js";
+import type * as leadsAdmin from "../leadsAdmin.js";
 import type * as releases from "../releases.js";
+import type * as releasesAdmin from "../releasesAdmin.js";
+import type * as siteSettings from "../siteSettings.js";
 
 import type {
   ApiFromModules,
@@ -19,9 +23,13 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  adminAudit: typeof adminAudit;
   contact: typeof contact;
   donations: typeof donations;
+  leadsAdmin: typeof leadsAdmin;
   releases: typeof releases;
+  releasesAdmin: typeof releasesAdmin;
+  siteSettings: typeof siteSettings;
 }>;
 
 /**

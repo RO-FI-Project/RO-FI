@@ -5,20 +5,22 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Copy, CreditCard, Heart, QrCode } from "lucide-react";
 import { toast } from "sonner";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
 
-const bankDetails = {
-  bank: "Vietcombank",
-  accountNumber: "1234 567 890",
-  accountName: "RF MUSIC",
-  qrImageAlt: "VietQR của RF",
-};
-
-const internationalLinks = {
-  paypal: "https://paypal.me/yourname",
-  stripe: "https://buy.stripe.com/yourlink",
+const fallbackSettings = {
+  bankName: "Vietcombank",
+  bankAccountNumber: "1234 567 890",
+  bankAccountName: "RF MUSIC",
+  bankQrUrl: "",
+  paypalUrl: "https://paypal.me/yourname",
+  stripeUrl: "https://buy.stripe.com/yourlink",
 };
 
 export function DonationSection() {
+  const settings = useQuery(api.siteSettings.getPublic);
+  const donation = settings?.donation ?? fallbackSettings;
+
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     toast.success(`${label} đã được copy.`);
@@ -76,21 +78,21 @@ export function DonationSection() {
                       <div className="space-y-3">
                         <div>
                           <p className="text-sm text-muted-foreground">Ngân hàng</p>
-                          <p className="font-medium">{bankDetails.bank}</p>
+                          <p className="font-medium">{donation.bankName}</p>
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">Tên tài khoản</p>
-                          <p className="font-medium">{bankDetails.accountName}</p>
+                          <p className="font-medium">{donation.bankAccountName}</p>
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">Số tài khoản</p>
                           <div className="flex items-center gap-2">
-                            <p className="font-mono text-lg font-semibold text-primary">{bankDetails.accountNumber}</p>
+                            <p className="font-mono text-lg font-semibold text-primary">{donation.bankAccountNumber}</p>
                             <Button
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8 text-muted-foreground hover:text-primary"
-                              onClick={() => copyToClipboard(bankDetails.accountNumber, "Số tài khoản")}
+                              onClick={() => copyToClipboard(donation.bankAccountNumber, "Số tài khoản")}
                             >
                               <Copy className="w-4 h-4" />
                             </Button>
@@ -104,7 +106,9 @@ export function DonationSection() {
                     <div className="w-48 h-48 bg-muted rounded-xl flex items-center justify-center mb-4 relative overflow-hidden">
                       <QrCode className="w-16 h-16 text-muted-foreground/30" />
                       <div className="absolute inset-0 flex items-center justify-center bg-white/80 backdrop-blur-sm">
-                        <p className="text-sm font-medium text-center px-4">{bankDetails.qrImageAlt}</p>
+                        <p className="text-sm font-medium text-center px-4">
+                          {donation.bankQrUrl ? "VietQR của RF" : "Chưa có QR"}
+                        </p>
                       </div>
                     </div>
                     <p className="text-sm text-muted-foreground text-center">
@@ -117,7 +121,7 @@ export function DonationSection() {
               <TabsContent value="international" className="space-y-6 animate-in fade-in-50 duration-300">
                 <div className="grid sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
                   <a
-                    href={internationalLinks.paypal}
+                    href={donation.paypalUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className={buttonVariants({ size: "lg", className: "h-16 text-lg rounded-2xl bg-[#0070ba] hover:bg-[#003087] text-white" })}
@@ -126,7 +130,7 @@ export function DonationSection() {
                     Donate via PayPal
                   </a>
                   <a
-                    href={internationalLinks.stripe}
+                    href={donation.stripeUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className={buttonVariants({ size: "lg", className: "h-16 text-lg rounded-2xl bg-[#635bff] hover:bg-[#4b45c6] text-white" })}

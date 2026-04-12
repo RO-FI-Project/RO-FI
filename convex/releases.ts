@@ -19,3 +19,24 @@ export const listByMonth = queryGeneric({
       .collect();
   },
 });
+
+export const listPublic = queryGeneric({
+  args: {
+    year: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    if (args.year) {
+      const start = `${args.year}-01-01`;
+      const end = `${args.year + 1}-01-01`;
+      return await ctx.db
+        .query("releases")
+        .withIndex("by_releaseDate", (q) => q.gte("releaseDate", start).lt("releaseDate", end))
+        .filter((q) => q.eq(q.field("isPublic"), true))
+        .collect();
+    }
+    return await ctx.db
+      .query("releases")
+      .filter((q) => q.eq(q.field("isPublic"), true))
+      .collect();
+  },
+});
