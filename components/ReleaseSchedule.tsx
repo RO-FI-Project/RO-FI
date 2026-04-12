@@ -63,7 +63,6 @@ export function ReleaseSchedule() {
     [releaseData]
   );
   const [selectedDay, setSelectedDay] = useState<Date | undefined>(undefined);
-  const effectiveSelectedDay = selectedDay ?? releases[0]?.date;
   const [selectedMonth, setSelectedMonth] = useState<Date | null>(null);
   const [activeView, setActiveView] = useState<"year" | "detail">("year");
   const fallbackMonth = useMemo(() => {
@@ -103,6 +102,17 @@ export function ReleaseSchedule() {
       statusList: statusOrder.filter((status) => stat.statuses.has(status)).slice(0, 3),
     }));
   }, [releases]);
+  const selectedMonthReleases = useMemo(
+    () =>
+      releases.filter(
+        (release) =>
+          release.date.getFullYear() === displayMonth.getFullYear() &&
+          release.date.getMonth() === displayMonth.getMonth()
+      ),
+    [displayMonth, releases]
+  );
+  const defaultMonthRelease = selectedMonthReleases[0]?.date;
+  const effectiveSelectedDay = selectedDay ?? defaultMonthRelease ?? releases[0]?.date;
   const selectedKey = effectiveSelectedDay ? format(effectiveSelectedDay, "yyyy-MM-dd") : "";
   const selectedReleases = selectedKey ? releaseMap.get(selectedKey) ?? [] : [];
 
@@ -162,8 +172,14 @@ export function ReleaseSchedule() {
                           key={stat.month}
                           type="button"
                           onClick={() => {
-                            setSelectedMonth(new Date(releaseYear, stat.month, 1));
-                            setSelectedDay(undefined);
+                            const nextMonth = new Date(releaseYear, stat.month, 1);
+                            setSelectedMonth(nextMonth);
+                            const nextRelease = releases.find(
+                              (release) =>
+                                release.date.getFullYear() === nextMonth.getFullYear() &&
+                                release.date.getMonth() === nextMonth.getMonth()
+                            );
+                            setSelectedDay(nextRelease?.date);
                             setActiveView("detail");
                           }}
                           className={cn(
@@ -194,7 +210,7 @@ export function ReleaseSchedule() {
             </div>
           </div>
 
-          <div className={cn("flex flex-col gap-6", activeView === "detail" ? "block" : "hidden lg:flex")}>
+          <div className={cn("flex flex-col gap-6", activeView === "detail" ? "flex" : "hidden lg:flex")}>
             <Card className="border-none shadow-xl shadow-primary/5 bg-white/80 backdrop-blur-sm">
               <CardContent className="pt-4 px-6 pb-5 flex justify-center">
                 <Calendar
@@ -225,7 +241,7 @@ export function ReleaseSchedule() {
                     months: "w-auto",
                     month: "w-auto",
                     month_caption: "relative flex h-(--cell-size) w-full items-center justify-center px-8 text-center",
-                    nav: "absolute inset-x-0 top-1/2 flex w-full -translate-y-1/2 items-center justify-between",
+                    nav: "absolute inset-y-0 left-5 right-5 flex items-center justify-between",
                     table: "w-full mt-2 mx-auto",
                     weekdays: "flex w-full justify-center gap-x-1.5",
                     weekday: "flex-1 text-center text-xs tracking-wide",
