@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,13 +21,20 @@ type ContactPayload = {
 
 export function ContactSection() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const formRef = useRef<HTMLFormElement | null>(null);
 
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (isSubmitting) return;
     setIsSubmitting(true);
 
-    const formData = new FormData(event.currentTarget);
+    const form = formRef.current;
+    if (!form) {
+      toast.error("Không tìm thấy form để gửi.");
+      setIsSubmitting(false);
+      return;
+    }
+    const formData = new FormData(form);
     const payload: ContactPayload = {
       name: String(formData.get("name") ?? ""),
       email: String(formData.get("email") ?? ""),
@@ -46,11 +53,13 @@ export function ContactSection() {
       });
 
       if (!response.ok) {
-        throw new Error("Gửi thất bại");
+        const data = await response.json().catch(() => null);
+        const message = typeof data?.message === "string" ? data.message : "Gửi thất bại";
+        throw new Error(message);
       }
 
       toast.success("Đã gửi tin nhắn! RF sẽ phản hồi sớm.");
-      event.currentTarget.reset();
+      form.reset();
     } catch (error) {
       const message = error instanceof Error ? error.message : "Lỗi không xác định";
       toast.error(message);
@@ -74,7 +83,7 @@ export function ContactSection() {
 
         <Card className="border-none shadow-lg shadow-primary/5 bg-white/80 backdrop-blur-sm">
           <CardContent className="pt-6">
-            <form onSubmit={onSubmit} className="space-y-6">
+            <form ref={formRef} onSubmit={onSubmit} className="space-y-6">
               <input type="text" name="company" className="hidden" tabIndex={-1} autoComplete="off" />
 
               <div className="grid sm:grid-cols-2 gap-6">

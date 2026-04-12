@@ -17,7 +17,10 @@ export async function POST(request: Request) {
   const parsed = contactSchema.safeParse(body);
 
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+    return NextResponse.json(
+      { error: "INVALID_PAYLOAD", message: "Dữ liệu không hợp lệ." },
+      { status: 400 }
+    );
   }
 
   if (parsed.data.company && parsed.data.company.length > 0) {
@@ -29,26 +32,47 @@ export async function POST(request: Request) {
   const contactTo = process.env.CONTACT_TO;
 
   if (!resendKey || !resendFrom || !contactTo) {
-    return NextResponse.json({ error: "Missing email config" }, { status: 500 });
+    return NextResponse.json(
+      { error: "MISSING_EMAIL_CONFIG", message: "Thiếu cấu hình email." },
+      { status: 500 }
+    );
   }
 
   const resend = new Resend(resendKey);
 
-  await resend.emails.send({
-    from: resendFrom,
-    to: contactTo,
-    subject: `RF Collab: ${parsed.data.name}`,
-    replyTo: parsed.data.email,
-    text: [
-      `Tên: ${parsed.data.name}`,
-      `Email: ${parsed.data.email}`,
-      `Tổ chức: ${parsed.data.organization || "-"}`,
-      `Ngân sách: ${parsed.data.budget || "-"}`,
-      `Deadline: ${parsed.data.deadline || "-"}`,
-      "",
-      parsed.data.message,
-    ].join("\n"),
-  });
+  try {
+    const { error } = await resend.emails.send({
+      from: resendFrom,
+      to: contactTo,
+      subject: `RF Collab: ${parsed.data.name}`,
+      replyTo: parsed.data.email,
+      text: [
+        `Tên: ${parsed.data.name}`,
+        `Email: ${parsed.data.email}`,
+        `Tổ chức: ${parsed.data.organization || "-"}`,
+        `Ngân sách: ${parsed.data.budget || "-"}`,
+        `Deadline: ${parsed.data.deadline || "-"}`,
+        "",
+        parsed.data.message,
+      ].join("\n"),
+    });
+
+    if (error) {
+      return NextResponse.json(
+        {
+          error: "RESEND_SEND_FAILED",
+          message: error.message || "Gửi email thất bại.",
+        },
+        { status: 502 }
+      );
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Lỗi không xác định.";
+    return NextResponse.json(
+      { error: "RESEND_EXCEPTION", message },
+      { status: 502 }
+    );
+  }
 
   return NextResponse.json({ ok: true });
 }
