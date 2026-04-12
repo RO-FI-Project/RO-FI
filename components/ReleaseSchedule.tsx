@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -64,17 +64,13 @@ export function ReleaseSchedule() {
   );
   const [selectedDay, setSelectedDay] = useState<Date | undefined>(undefined);
   const effectiveSelectedDay = selectedDay ?? releases[0]?.date;
-  const [selectedMonth, setSelectedMonth] = useState<Date>(() => {
+  const [selectedMonth, setSelectedMonth] = useState<Date | null>(null);
+  const [activeView, setActiveView] = useState<"year" | "detail">("year");
+  const fallbackMonth = useMemo(() => {
     const initialDate = releases[0]?.date ?? new Date(releaseYear, 0, 1);
     return new Date(initialDate.getFullYear(), initialDate.getMonth(), 1);
-  });
-  const [activeView, setActiveView] = useState<"year" | "detail">("year");
-
-  useEffect(() => {
-    if (selectedDay || releases.length === 0) return;
-    const firstReleaseMonth = new Date(releases[0].date.getFullYear(), releases[0].date.getMonth(), 1);
-    setSelectedMonth(firstReleaseMonth);
-  }, [releases, selectedDay]);
+  }, [releases]);
+  const displayMonth = selectedMonth ?? fallbackMonth;
 
   const releaseMap = useMemo(() => {
     const map = new Map<string, ReleaseItem[]>();
@@ -159,7 +155,7 @@ export function ReleaseSchedule() {
                     {monthStats.map((stat) => {
                       const monthDate = new Date(releaseYear, stat.month, 1);
                       const isActiveMonth =
-                        selectedMonth.getFullYear() === releaseYear && selectedMonth.getMonth() === stat.month;
+                        displayMonth.getFullYear() === releaseYear && displayMonth.getMonth() === stat.month;
 
                       return (
                         <button
@@ -205,7 +201,7 @@ export function ReleaseSchedule() {
                   mode="single"
                   selected={effectiveSelectedDay}
                   fixedWeeks
-                  month={selectedMonth}
+                  month={displayMonth}
                   onMonthChange={(month) => {
                     setSelectedMonth(month);
                     if (selectedDay) {
@@ -228,8 +224,8 @@ export function ReleaseSchedule() {
                     root: "flex w-full justify-center",
                     months: "w-auto",
                     month: "w-auto",
-                    month_caption: "relative w-full px-8 text-center",
-                    nav: "absolute inset-x-0 top-0 flex w-full items-center justify-between",
+                    month_caption: "relative flex h-(--cell-size) w-full items-center justify-center px-8 text-center",
+                    nav: "absolute inset-x-0 top-1/2 flex w-full -translate-y-1/2 items-center justify-between",
                     table: "w-auto mt-2 mx-auto",
                     weekdays: "flex w-auto justify-center",
                     weekday: "flex-1 text-center text-xs tracking-wide",
