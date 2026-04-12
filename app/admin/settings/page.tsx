@@ -11,6 +11,8 @@ import { PermissionGate } from "@/components/admin/PermissionGate";
 import { hasPermission, parseRole } from "@/lib/rbac";
 
 type SocialItem = { label: string; url: string };
+const socialOptions = ["Facebook", "YouTube", "TikTok", "Instagram", "Spotify", "SoundCloud"] as const;
+const otherSocialOption = "Khác";
 
 type SettingsForm = {
   brandName: string;
@@ -235,17 +237,47 @@ function SettingsFormContent({ initialForm, canWrite, onSave }: SettingsFormCont
             <p className="text-sm text-muted-foreground">Chưa có link.</p>
           ) : (
             form.socials.map((item, index) => (
+              (() => {
+                const isPreset = socialOptions.includes(item.label as (typeof socialOptions)[number]);
+                const selectedValue = isPreset ? item.label : otherSocialOption;
+
+                return (
               <div key={`${item.label}-${index}`} className="grid gap-3 md:grid-cols-[1fr_2fr_auto]">
-                <Input
-                  value={item.label}
-                  placeholder="Tên"
-                  disabled={!canWrite}
-                  onChange={(event) => {
-                    const updated = [...form.socials];
-                    updated[index] = { ...updated[index], label: event.target.value };
-                    setForm({ ...form, socials: updated });
-                  }}
-                />
+                <div className="space-y-2">
+                  <select
+                    value={selectedValue}
+                    disabled={!canWrite}
+                    className="h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80"
+                    onChange={(event) => {
+                      const updated = [...form.socials];
+                      const nextValue = event.target.value;
+                      updated[index] = {
+                        ...updated[index],
+                        label: nextValue === otherSocialOption ? "" : nextValue,
+                      };
+                      setForm({ ...form, socials: updated });
+                    }}
+                  >
+                    {socialOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                    <option value={otherSocialOption}>{otherSocialOption}</option>
+                  </select>
+                  {!isPreset && (
+                    <Input
+                      value={item.label}
+                      placeholder="Tên nền tảng"
+                      disabled={!canWrite}
+                      onChange={(event) => {
+                        const updated = [...form.socials];
+                        updated[index] = { ...updated[index], label: event.target.value };
+                        setForm({ ...form, socials: updated });
+                      }}
+                    />
+                  )}
+                </div>
                 <Input
                   value={item.url}
                   placeholder="https://"
@@ -266,6 +298,8 @@ function SettingsFormContent({ initialForm, canWrite, onSave }: SettingsFormCont
                   Xoá
                 </Button>
               </div>
+                );
+              })()
             ))
           )}
         </CardContent>
