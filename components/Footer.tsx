@@ -1,6 +1,13 @@
+"use client";
+
+import { useQuery } from "convex/react";
 import { Heart, Music } from "lucide-react";
+import { api } from "@/convex/_generated/api";
 
 export function Footer() {
+  const settings = useQuery(api.siteSettings.getPublic);
+  const socials: { label: string; url: string }[] = settings?.socials ?? [];
+
   return (
     <footer className="bg-white border-t border-primary/10 py-12">
       <div className="container mx-auto px-4 flex flex-col items-center justify-center text-center">
@@ -15,23 +22,18 @@ export function Footer() {
           Cảm ơn bạn đã đồng hành cùng RF. Mỗi donate là một nguồn động lực để ra mắt sản phẩm mới.
         </p>
 
-        <div className="flex items-center gap-4 mb-8">
-          <a href="https://rfpage.vercel.app" target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-primary hover:underline">
-            Main Portfolio
-          </a>
-          <span className="text-muted-foreground">•</span>
-          <a href="#" className="text-sm font-medium text-primary hover:underline">
-            YouTube
-          </a>
-          <span className="text-muted-foreground">•</span>
-          <a href="#" className="text-sm font-medium text-primary hover:underline">
-            Spotify
-          </a>
-          <span className="text-muted-foreground">•</span>
-          <a href="#" className="text-sm font-medium text-primary hover:underline">
-            Discord
-          </a>
-        </div>
+        {socials.length > 0 && (
+          <div className="flex items-center gap-4 mb-8">
+            {socials.map((item, index) => (
+              <span key={`${item.label}-${index}`} className="flex items-center gap-4">
+                {index > 0 && <span className="text-muted-foreground">•</span>}
+                <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-primary hover:underline">
+                  {item.label}
+                </a>
+              </span>
+            ))}
+          </div>
+        )}
 
         <p className="text-sm text-muted-foreground flex items-center gap-1">
           Made with <Heart className="w-4 h-4 text-primary fill-primary mx-1" /> by RF © {new Date().getFullYear()}

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PermissionGate } from "@/components/admin/PermissionGate";
 import { hasPermission, parseRole } from "@/lib/rbac";
+import { toast } from "sonner";
 
 type SocialItem = { label: string; url: string };
 const socialOptions = ["Facebook", "YouTube", "TikTok", "Instagram", "Spotify", "SoundCloud"] as const;
@@ -113,6 +114,10 @@ type SettingsFormContentProps = {
 
 function SettingsFormContent({ initialForm, canWrite, onSave }: SettingsFormContentProps) {
   const [form, setForm] = useState<SettingsForm>(initialForm);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [touchIndex, setTouchIndex] = useState<number | null>(null);
+  const [touchOverIndex, setTouchOverIndex] = useState<number | null>(null);
+  const [isSavingOrder, setIsSavingOrder] = useState(false);
 
   const updateDonationField = (key: keyof SettingsForm["donation"], value: string) => {
     setForm((prev) => ({
@@ -122,6 +127,31 @@ function SettingsFormContent({ initialForm, canWrite, onSave }: SettingsFormCont
         [key]: value,
       },
     }));
+  };
+
+  const persistSocialOrder = async (nextSocials: SocialItem[]) => {
+    const prevSocials = form.socials;
+    const nextForm = { ...form, socials: nextSocials };
+    setForm(nextForm);
+    if (isSavingOrder) return;
+    setIsSavingOrder(true);
+    try {
+      await onSave(nextForm);
+    } catch (error) {
+      setForm((prev) => ({ ...prev, socials: prevSocials }));
+      const message = error instanceof Error ? error.message : "Lỗi không xác định";
+      toast.error(message);
+    } finally {
+      setIsSavingOrder(false);
+    }
+  };
+
+  const reorderSocials = (fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex) return null;
+    const updated = [...form.socials];
+    const [moved] = updated.splice(fromIndex, 1);
+    updated.splice(toIndex, 0, moved);
+    return updated;
   };
 
   return (
@@ -242,7 +272,58 @@ function SettingsFormContent({ initialForm, canWrite, onSave }: SettingsFormCont
                 const selectedValue = isPreset ? item.label : otherSocialOption;
 
                 return (
-              <div key={`${item.label}-${index}`} className="grid gap-3 md:grid-cols-[1fr_2fr_auto]">
+              <div
+                key={`${item.label}-${index}`}
+                data-social-index={index}
+                className="grid gap-3 md:grid-cols-[auto_1fr_2fr_auto]"
+                onDragOver={(event) => {
+                  if (!canWrite) return;
+                  event.preventDefault();
+                }}
+                onDrop={async () => {
+                  if (!canWrite || dragIndex === null) return;
+                  const nextSocials = reorderSocials(dragIndex, index);
+                  setDragIndex(null);
+                  if (!nextSocials) return;
+                  await persistSocialOrder(nextSocials);
+                }}
+                onTouchStart={() => {
+                  if (!canWrite) return;
+                  setTouchIndex(index);
+                }}
+                onTouchMove={(event) => {
+                  if (!canWrite) return;
+                  const touch = event.touches[0];
+                  const target = document.elementFromPoint(touch.clientX, touch.clientY);
+                  const container = target?.closest("[data-social-index]");
+                  if (!container) return;
+                  const nextIndex = Number(container.getAttribute("data-social-index"));
+                  if (Number.isNaN(nextIndex)) return;
+                  setTouchOverIndex(nextIndex);
+                }}
+                onTouchEnd={async () => {
+                  if (!canWrite || touchIndex === null || touchOverIndex === null) {
+                    setTouchIndex(null);
+                    setTouchOverIndex(null);
+                    return;
+                  }
+                  const nextSocials = reorderSocials(touchIndex, touchOverIndex);
+                  setTouchIndex(null);
+                  setTouchOverIndex(null);
+                  if (!nextSocials) return;
+                  await persistSocialOrder(nextSocials);
+                }}
+              >
+                <button
+                  type="button"
+                  aria-label="Kéo để sắp xếp"
+                  disabled={!canWrite}
+                  draggable={canWrite}
+                  onDragStart={() => setDragIndex(index)}
+                  className="h-8 w-8 rounded-lg border border-input bg-transparent text-sm text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  ☰
+                </button>
                 <div className="space-y-2">
                   <select
                     value={selectedValue}
@@ -288,15 +369,43 @@ function SettingsFormContent({ initialForm, canWrite, onSave }: SettingsFormCont
                     setForm({ ...form, socials: updated });
                   }}
                 />
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  disabled={!canWrite}
-                  onClick={() => setForm((prev) => ({ ...prev, socials: prev.socials.filter((_, i) => i !== index) }))}
-                >
-                  Xoá
-                </Button>
+                <div className="flex items-center gap-1">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    disabled={!canWrite || index === 0}
+                    onClick={async () => {
+                      const nextSocials = reorderSocials(index, index - 1);
+                      if (!nextSocials) return;
+                      await persistSocialOrder(nextSocials);
+                    }}
+                  >
+                    ↑
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    disabled={!canWrite || index === form.socials.length - 1}
+                    onClick={async () => {
+                      const nextSocials = reorderSocials(index, index + 1);
+                      if (!nextSocials) return;
+                      await persistSocialOrder(nextSocials);
+                    }}
+                  >
+                    ↓
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    disabled={!canWrite}
+                    onClick={() => setForm((prev) => ({ ...prev, socials: prev.socials.filter((_, i) => i !== index) }))}
+                  >
+                    Xoá
+                  </Button>
+                </div>
               </div>
                 );
               })()
