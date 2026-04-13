@@ -1,13 +1,17 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { buttonVariants } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Menu, Music, X } from "lucide-react";
 
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const pathname = usePathname();
+  const isHome = pathname === "/";
 
   useEffect(() => {
     const handleScroll = () => {
@@ -17,11 +21,16 @@ export function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const navLinks = [
-    { name: "Donate", href: "#donate" },
-    { name: "Lịch phát hành", href: "#releases" },
+  const navLinks = isHome
+    ? [
+        { name: "Donate", href: "#donate" },
+        { name: "Lịch phát hành", href: "#releases" },
+        { name: "Hợp tác", href: "#contact" },
+      ]
+    : [];
+  const exploreLinks = [
     { name: "Fan Ideas", href: "/fan-ideas" },
-    { name: "Hợp tác", href: "#contact" },
+    { name: "Music Room", href: "/music-room" },
   ];
 
   return (
@@ -39,28 +48,39 @@ export function Navbar() {
         </a>
 
         <nav className="hidden md:flex items-center gap-8">
-          {navLinks.map((link) =>
-            link.href.startsWith("/") ? (
-              <Link
-                key={link.name}
-                href={link.href}
-                className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-              >
-                {link.name}
-              </Link>
-            ) : (
-              <a
-                key={link.name}
-                href={link.href}
-                className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-              >
-                {link.name}
-              </a>
-            )
-          )}
-          <a href="#donate" className={buttonVariants({ className: "rounded-full px-6" })}>
-            Ủng hộ ngay
-          </a>
+          {navLinks.map((link) => (
+            <a
+              key={link.name}
+              href={link.href}
+              className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+            >
+              {link.name}
+            </a>
+          ))}
+          <Popover>
+            <PopoverTrigger className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+              Khám phá
+            </PopoverTrigger>
+            <PopoverContent className="w-56">
+              <div className="space-y-1">
+                <p className="px-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Trang riêng</p>
+                {exploreLinks.map((link) => (
+                  <Link
+                    key={link.name}
+                    href={link.href}
+                    className="flex items-center justify-between rounded-md px-2 py-2 text-sm font-medium text-foreground hover:bg-muted"
+                  >
+                    {link.name}
+                  </Link>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+          {isHome ? (
+            <a href="#donate" className={buttonVariants({ className: "rounded-full px-6" })}>
+              Ủng hộ ngay
+            </a>
+          ) : null}
         </nav>
 
         <button
@@ -74,34 +94,40 @@ export function Navbar() {
 
       {isMobileMenuOpen && (
         <div className="md:hidden absolute top-full left-0 right-0 bg-white border-b border-primary/10 shadow-lg py-4 px-4 flex flex-col gap-4 animate-in slide-in-from-top-2">
-          {navLinks.map((link) =>
-            link.href.startsWith("/") ? (
-              <Link
-                key={link.name}
-                href={link.href}
-                className="text-base font-medium text-foreground py-2 border-b border-muted/50"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                {link.name}
-              </Link>
-            ) : (
-              <a
-                key={link.name}
-                href={link.href}
-                className="text-base font-medium text-foreground py-2 border-b border-muted/50"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                {link.name}
-              </a>
-            )
-          )}
-          <a
-            href="#donate"
-            className={buttonVariants({ className: "w-full rounded-xl mt-2" })}
-            onClick={() => setIsMobileMenuOpen(false)}
-          >
-            Ủng hộ ngay
-          </a>
+          {navLinks.map((link) => (
+            <a
+              key={link.name}
+              href={link.href}
+              className="text-base font-medium text-foreground py-2 border-b border-muted/50"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              {link.name}
+            </a>
+          ))}
+          <div className="pt-2">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Khám phá</p>
+            <div className="flex flex-col gap-2">
+              {exploreLinks.map((link) => (
+                <Link
+                  key={link.name}
+                  href={link.href}
+                  className="text-base font-medium text-foreground py-2 border-b border-muted/50"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  {link.name}
+                </Link>
+              ))}
+            </div>
+          </div>
+          {isHome ? (
+            <a
+              href="#donate"
+              className={buttonVariants({ className: "w-full rounded-xl mt-2" })}
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Ủng hộ ngay
+            </a>
+          ) : null}
         </div>
       )}
     </header>

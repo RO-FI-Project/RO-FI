@@ -85,6 +85,9 @@ export default function FanIdeasPage() {
         <section className="py-16 md:py-24 bg-primary/5">
           <div className="container mx-auto px-4 max-w-5xl">
             <div className="text-center mb-12">
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
+                Fan Space
+              </p>
               <h1 className="font-display text-3xl md:text-4xl font-semibold mb-4 flex items-center justify-center gap-2">
                 <Sparkles className="w-8 h-8 text-primary" />
                 Fan Ideas
