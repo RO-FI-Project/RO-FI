@@ -1,6 +1,7 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { ConvexProviders } from "@/components/ConvexProviders";
+import { RootProviders } from "@/components/RootProviders";
 import { getRoleFromClaims, parseRole } from "@/lib/rbac";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -49,8 +50,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   }
 
   return (
-    <AdminShell role={role} userLabel={userLabel}>
-      <ConvexProviders>{children}</ConvexProviders>
-    </AdminShell>
+    <RootProviders>
+      <AdminShell role={role} userLabel={userLabel}>
+        <ConvexProviders>{children}</ConvexProviders>
+      </AdminShell>
+    </RootProviders>
   );
 }
