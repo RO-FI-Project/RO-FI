@@ -40,12 +40,12 @@ export function Navbar() {
       }`}
     >
       <div className="container mx-auto px-4 flex items-center justify-between">
-        <a href="#" className="flex items-center gap-2 text-foreground font-display font-bold text-2xl">
+        <Link href="/" className="flex items-center gap-2 text-foreground font-display font-bold text-2xl">
           <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white">
             <Music className="w-4 h-4" />
           </div>
           RF
-        </a>
+        </Link>
 
         <nav className="hidden md:flex items-center gap-8">
           {navLinks.map((link) => (
