@@ -9,11 +9,13 @@ import { toast } from "sonner";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { motion, AnimatePresence } from "motion/react";
+import { findBankOption } from "@/lib/banks";
 
 const fallbackSettings = {
   bankName: "Vietcombank",
   bankAccountNumber: "1234 567 890",
   bankAccountName: "RF MUSIC",
+  bankBin: "",
   bankQrUrl: "",
   paypalUrl: "https://paypal.me/yourname",
   stripeUrl: "https://buy.stripe.com/yourlink",
@@ -48,7 +50,24 @@ export function DonationSection() {
 
   const displayAmount = customAmount ? Number.parseInt(customAmount, 10) || 0 : amount;
   const vndAmount = displayAmount * VND_PER_UNIT;
-  const hasQr = Boolean(donation.bankQrUrl);
+  const resolvedBankBin = donation.bankBin || findBankOption(donation.bankName)?.bin || "";
+  const sanitizedAccountNumber = donation.bankAccountNumber.replace(/\s/g, "");
+  const hasDynamicQr = Boolean(resolvedBankBin && sanitizedAccountNumber && displayAmount > 0);
+  const qrMessage = message.trim();
+  const qrParams = new URLSearchParams();
+  if (hasDynamicQr) {
+    qrParams.set("amount", String(vndAmount));
+    if (qrMessage) {
+      qrParams.set("addInfo", qrMessage);
+    }
+    if (donation.bankAccountName) {
+      qrParams.set("accountName", donation.bankAccountName);
+    }
+  }
+  const qrUrl = hasDynamicQr
+    ? `https://img.vietqr.io/image/${resolvedBankBin}-${sanitizedAccountNumber}-compact2.png?${qrParams.toString()}`
+    : donation.bankQrUrl;
+  const hasQr = Boolean(qrUrl);
 
   return (
     <section id="donate" className="py-16 md:py-24 relative overflow-hidden">
@@ -162,7 +181,7 @@ export function DonationSection() {
                       <div className="w-24 h-24 bg-white rounded-2xl shadow-sm border border-border flex items-center justify-center shrink-0 relative overflow-hidden group">
                         {hasQr ? (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img src={donation.bankQrUrl} alt="VietQR" className="w-full h-full object-cover" />
+                          <img src={qrUrl} alt="VietQR" className="w-full h-full object-cover" />
                         ) : (
                           <QrCode className="w-10 h-10 text-muted-foreground/30" />
                         )}

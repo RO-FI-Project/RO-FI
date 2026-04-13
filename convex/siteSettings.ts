@@ -5,6 +5,7 @@ const donationSchema = v.object({
   bankName: v.string(),
   bankAccountName: v.string(),
   bankAccountNumber: v.string(),
+  bankBin: v.optional(v.string()),
   bankQrUrl: v.optional(v.string()),
   paypalUrl: v.optional(v.string()),
   stripeUrl: v.optional(v.string()),

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PermissionGate } from "@/components/admin/PermissionGate";
 import { hasPermission, parseRole } from "@/lib/rbac";
+import { BANK_OPTIONS, OTHER_BANK_OPTION, findBankOption } from "@/lib/banks";
 import { toast } from "sonner";
 
 type SocialItem = { label: string; url: string };
@@ -23,6 +24,7 @@ type SettingsForm = {
     bankName: string;
     bankAccountName: string;
     bankAccountNumber: string;
+    bankBin: string;
     bankQrUrl: string;
     paypalUrl: string;
     stripeUrl: string;
@@ -38,6 +40,7 @@ const emptySettings: SettingsForm = {
     bankName: "",
     bankAccountName: "",
     bankAccountNumber: "",
+    bankBin: "",
     bankQrUrl: "",
     paypalUrl: "",
     stripeUrl: "",
@@ -62,6 +65,7 @@ export default function SettingsAdminPage() {
           bankName: settings.donation.bankName,
           bankAccountName: settings.donation.bankAccountName,
           bankAccountNumber: settings.donation.bankAccountNumber,
+          bankBin: settings.donation.bankBin ?? "",
           bankQrUrl: settings.donation.bankQrUrl ?? "",
           paypalUrl: settings.donation.paypalUrl ?? "",
           stripeUrl: settings.donation.stripeUrl ?? "",
@@ -79,6 +83,7 @@ export default function SettingsAdminPage() {
         bankName: form.donation.bankName,
         bankAccountName: form.donation.bankAccountName,
         bankAccountNumber: form.donation.bankAccountNumber,
+        bankBin: findBankOption(form.donation.bankName)?.bin || form.donation.bankBin || undefined,
         bankQrUrl: form.donation.bankQrUrl || undefined,
         paypalUrl: form.donation.paypalUrl || undefined,
         stripeUrl: form.donation.stripeUrl || undefined,
@@ -200,12 +205,35 @@ function SettingsFormContent({ initialForm, canWrite, onSave }: SettingsFormCont
         <CardContent className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
             <label className="text-sm font-medium">Ngân hàng</label>
-            <Input
-              value={form.donation.bankName}
+            <select
+              value={findBankOption(form.donation.bankName)?.code ?? OTHER_BANK_OPTION}
               disabled={!canWrite}
-              onChange={(event) => updateDonationField("bankName", event.target.value)}
-            />
+              className="h-10 w-full rounded-lg border border-input bg-transparent px-3 py-2 text-base transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80"
+              onChange={(event) => {
+                const nextValue = event.target.value;
+                const nextBank = BANK_OPTIONS.find((option) => option.code === nextValue);
+                updateDonationField("bankName", nextBank?.label ?? "");
+                updateDonationField("bankBin", nextBank?.bin ?? "");
+              }}
+            >
+              {BANK_OPTIONS.map((option) => (
+                <option key={option.code} value={option.code}>
+                  {option.label}
+                </option>
+              ))}
+              <option value={OTHER_BANK_OPTION}>{OTHER_BANK_OPTION}</option>
+            </select>
           </div>
+          {findBankOption(form.donation.bankName) ? null : (
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Ngân hàng (khác)</label>
+              <Input
+                value={form.donation.bankName}
+                disabled={!canWrite}
+                onChange={(event) => updateDonationField("bankName", event.target.value)}
+              />
+            </div>
+          )}
           <div className="space-y-2">
             <label className="text-sm font-medium">Tên tài khoản</label>
             <Input
