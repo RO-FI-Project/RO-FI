@@ -15,12 +15,12 @@ const fredoka = Fredoka({
 
 export const metadata: Metadata = {
   title: "RF | Donate Hub",
-  description: "Ủng hộ RF, theo dõi lịch phát hành và kết nối hợp tác.",
+  description: "Support RF, follow the release schedule, and collaborate on new projects.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="vi" className={`${nunito.variable} ${fredoka.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${nunito.variable} ${fredoka.variable}`} suppressHydrationWarning>
       <body className="font-sans antialiased selection:bg-primary/30" suppressHydrationWarning>
         {children}
         <Toaster />

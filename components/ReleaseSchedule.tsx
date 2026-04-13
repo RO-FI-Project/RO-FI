@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CalendarDays, Disc3, Sparkles } from "lucide-react";
 import { format } from "date-fns";
-import { vi } from "date-fns/locale";
+import { enUS } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { getDefaultClassNames, type DayButton, type Locale } from "react-day-picker";
 import { useQuery } from "convex/react";
@@ -122,10 +122,10 @@ export function ReleaseSchedule() {
         <div className="text-center mb-12">
           <h2 className="font-display text-3xl md:text-4xl font-semibold mb-4 flex items-center justify-center gap-2">
             <CalendarDays className="w-8 h-8 text-primary" />
-            Lịch phát hành {releaseYear}
+            Release schedule {releaseYear}
           </h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Chạm vào ngày để xem chi tiết. RF sẽ cập nhật lịch năm nay để fan dễ theo dõi.
+            Tap a day to see the details. RF will keep this calendar updated for everyone to follow.
           </p>
         </div>
 
@@ -140,7 +140,7 @@ export function ReleaseSchedule() {
                   activeView === "year" ? "bg-white text-foreground shadow-sm" : "text-muted-foreground"
                 )}
               >
-                Tổng quan năm
+                Year overview
               </button>
               <button
                 type="button"
@@ -150,7 +150,7 @@ export function ReleaseSchedule() {
                   activeView === "detail" ? "bg-white text-foreground shadow-sm" : "text-muted-foreground"
                 )}
               >
-                Chi tiết lịch
+                Schedule details
               </button>
             </div>
 
@@ -158,8 +158,8 @@ export function ReleaseSchedule() {
               <Card className="h-full border-none shadow-xl shadow-primary/5 bg-white/80 backdrop-blur-sm">
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-display text-xl font-semibold">Tổng quan {releaseYear}</h3>
-                    <Badge className="rounded-full px-3">12 tháng</Badge>
+                    <h3 className="font-display text-xl font-semibold">{releaseYear} overview</h3>
+                    <Badge className="rounded-full px-3">12 months</Badge>
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4">
                     {monthStats.map((stat) => {
@@ -188,13 +188,13 @@ export function ReleaseSchedule() {
                           )}
                         >
                           <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                            {format(monthDate, "MMM", { locale: vi })}
+                            {format(monthDate, "MMM", { locale: enUS })}
                           </p>
                           <p className="mt-1 text-2xl font-semibold text-foreground">{stat.count}</p>
-                          <p className="text-xs text-muted-foreground">release</p>
+                          <p className="text-xs text-muted-foreground">release(s)</p>
                           <div className="mt-2 flex items-center gap-1">
                             {stat.statusList.length === 0 ? (
-                              <span className="text-xs text-muted-foreground">Chưa có lịch</span>
+                              <span className="text-xs text-muted-foreground">No schedule yet</span>
                             ) : (
                               stat.statusList.map((status) => (
                                 <span key={status} className={cn("size-2 rounded-full", statusDotStyles[status])} />
@@ -234,7 +234,7 @@ export function ReleaseSchedule() {
                     setSelectedDay(day);
                     setSelectedMonth(new Date(day.getFullYear(), day.getMonth(), 1));
                   }}
-                  locale={vi}
+                  locale={enUS}
                   className="mx-auto w-auto [--cell-size:--spacing(7)]"
                   classNames={{
                     root: "flex w-full justify-center",
@@ -253,7 +253,7 @@ export function ReleaseSchedule() {
                     hasRelease: "rdp-day_has-release",
                   }}
                   components={{
-                    DayButton: (props) => <ReleaseDayButton locale={vi} {...props} />,
+                    DayButton: (props) => <ReleaseDayButton locale={enUS} {...props} />,
                   }}
                 />
               </CardContent>
@@ -264,14 +264,14 @@ export function ReleaseSchedule() {
                 <div className="flex items-center justify-between">
                   <h3 className="font-display text-xl font-semibold flex items-center gap-2">
                     <Disc3 className="w-5 h-5 text-primary" />
-                    {effectiveSelectedDay ? format(effectiveSelectedDay, "dd MMMM yyyy", { locale: vi }) : "Chọn một ngày"}
+                    {effectiveSelectedDay ? format(effectiveSelectedDay, "dd MMMM yyyy", { locale: enUS }) : "Select a day"}
                   </h3>
                   <Badge className="rounded-full px-3">Release</Badge>
                 </div>
 
                 {selectedReleases.length === 0 ? (
                   <div className="rounded-2xl border border-dashed border-primary/20 bg-white/70 p-4 text-sm text-muted-foreground">
-                    Chưa có lịch phát hành cho ngày này. Hãy chọn ngày có chấm để xem chi tiết nhé.
+                    No releases scheduled for this day. Pick a day with a dot to see the details.
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -294,7 +294,7 @@ export function ReleaseSchedule() {
 
                 <div className="rounded-2xl border border-primary/10 bg-white/70 p-4 text-sm text-muted-foreground flex items-start gap-2">
                   <Sparkles className="w-4 h-4 text-primary mt-0.5" />
-                  Lịch phát hành có thể điều chỉnh theo tiến độ sản xuất, RF sẽ thông báo sớm khi có thay đổi.
+                  Release timing may shift with production. RF will announce updates as soon as possible.
                 </div>
               </CardContent>
             </Card>

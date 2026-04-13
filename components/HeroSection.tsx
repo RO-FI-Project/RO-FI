@@ -7,7 +7,7 @@ import { api } from "@/convex/_generated/api";
 
 export function HeroSection() {
   const settings = useQuery(api.siteSettings.getPublic);
-  const heroSubtitle = settings?.heroSubtitle ?? "Artist hub cho cộng đồng yêu nhạc & anime";
+  const heroSubtitle = settings?.heroSubtitle ?? "Artist hub for the music & anime community";
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-background pt-16">
@@ -28,7 +28,7 @@ export function HeroSection() {
 
       <div className="absolute bottom-8 left-4 md:bottom-12 md:left-12 max-w-[320px] z-10 hidden md:block">
         <p className="text-xs font-bold uppercase tracking-widest text-foreground/50 leading-relaxed">
-          RF mang vibe pop/anime ngọt ngào, tập trung vào cảm xúc và tính kể chuyện trong từng track.
+          RF blends pop and anime-inspired sounds, focusing on emotion and storytelling in every track.
         </p>
       </div>
 
@@ -84,11 +84,11 @@ export function HeroSection() {
         <div className="mt-8 md:mt-12 flex flex-col sm:flex-row items-center justify-center gap-4 z-30 w-full max-w-md mx-auto">
           <a href="#donate" className={buttonVariants({ size: "lg", className: "w-full sm:w-auto rounded-full font-semibold text-base px-8 shadow-lg shadow-primary/20" })}>
             <Heart className="w-5 h-5 mr-2 fill-current" />
-            Ủng hộ RF
+            Support RF
           </a>
           <a href="#releases" className={buttonVariants({ size: "lg", variant: "secondary", className: "w-full sm:w-auto rounded-full font-semibold text-base px-8 shadow-lg shadow-secondary/20 bg-white" })}>
             <Music className="w-5 h-5 mr-2" />
-            Xem lịch phát hành
+            View release calendar
           </a>
         </div>
       </div>

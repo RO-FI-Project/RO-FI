@@ -36,7 +36,7 @@ export function ContactSection() {
 
     const form = formRef.current;
     if (!form) {
-      toast.error("Không tìm thấy form để gửi.");
+      toast.error("Unable to find the form.");
       setIsSubmitting(false);
       return;
     }
@@ -68,14 +68,14 @@ export function ContactSection() {
 
       if (!response.ok) {
         const data = await response.json().catch(() => null);
-        const message = typeof data?.message === "string" ? data.message : "Gửi thất bại";
+        const message = typeof data?.message === "string" ? data.message : "Submission failed.";
         throw new Error(message);
       }
 
-      toast.success("Đã gửi tin nhắn! RF sẽ phản hồi sớm.");
+      toast.success("Message sent! RF will get back soon.");
       form.reset();
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Lỗi không xác định";
+      const message = error instanceof Error ? error.message : "Unexpected error.";
       toast.error(message);
     } finally {
       setIsSubmitting(false);
@@ -88,10 +88,10 @@ export function ContactSection() {
         <div className="text-center mb-12">
           <h2 className="font-display text-3xl md:text-4xl font-semibold mb-4 flex items-center justify-center gap-2">
             <Mail className="w-8 h-8 text-primary" />
-            Kết nối hợp tác
+            Collaboration
           </h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Bạn có dự án muốn hợp tác cùng RF? Gửi thông tin để mình phản hồi nhanh nhất.
+            Have a project in mind? Share the details and RF will reply soon.
           </p>
         </div>
 
@@ -102,8 +102,8 @@ export function ContactSection() {
 
               <div className="grid sm:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Tên liên hệ</Label>
-                  <Input id="name" name="name" required placeholder="Tên của bạn" className="bg-white/50 rounded-xl" />
+                  <Label htmlFor="name">Contact name</Label>
+                  <Input id="name" name="name" required placeholder="Your name" className="bg-white/50 rounded-xl" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
@@ -112,17 +112,17 @@ export function ContactSection() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="organization">Tổ chức / team</Label>
+                <Label htmlFor="organization">Organization / team</Label>
                 <Input id="organization" name="organization" placeholder="Studio, brand, agency..." className="bg-white/50 rounded-xl" />
               </div>
 
               <div className="grid sm:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="budget">Ngân sách dự kiến</Label>
-                  <Input id="budget" name="budget" placeholder="Ví dụ: 10-30 triệu" className="bg-white/50 rounded-xl" />
+                  <Label htmlFor="budget">Estimated budget</Label>
+                  <Input id="budget" name="budget" placeholder="e.g., $500 - $1,500" className="bg-white/50 rounded-xl" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="deadline">Deadline mong muốn</Label>
+                  <Label htmlFor="deadline">Preferred deadline</Label>
                   <Input
                     id="deadline"
                     name="deadline"
@@ -134,19 +134,19 @@ export function ContactSection() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="message">Nội dung hợp tác</Label>
+                <Label htmlFor="message">Collaboration brief</Label>
                 <Textarea
                   id="message"
                   name="message"
                   required
-                  placeholder="Mô tả brief, mục tiêu, kỳ vọng..."
+                  placeholder="Describe the brief, goals, and expectations..."
                   className="min-h-[150px] bg-white/50 rounded-xl resize-none"
                 />
               </div>
 
               <Button type="submit" size="lg" disabled={isSubmitting} className="w-full rounded-xl font-semibold text-base h-12">
                 <Send className="w-5 h-5 mr-2" />
-                {isSubmitting ? "Đang gửi..." : "Gửi liên hệ"}
+                {isSubmitting ? "Sending..." : "Send inquiry"}
               </Button>
             </form>
           </CardContent>

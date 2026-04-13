@@ -58,7 +58,7 @@ export default function FanIdeasPage() {
 
     const form = formRef.current;
     if (!form) {
-      toast.error("Không tìm thấy form để gửi.");
+      toast.error("Unable to find the form.");
       setIsSubmitting(false);
       return;
     }
@@ -72,17 +72,17 @@ export default function FanIdeasPage() {
     };
 
     if (!payload.fanName || !payload.title || !payload.idea || !payload.proposedDate) {
-      toast.error("Vui lòng điền đầy đủ thông tin.");
+      toast.error("Please complete all required fields.");
       setIsSubmitting(false);
       return;
     }
 
     try {
       await submitIdea(payload);
-      toast.success("Đã gửi ý tưởng! RF sẽ cân nhắc và cập nhật sớm.");
+      toast.success("Idea sent! RF will review and update soon.");
       form.reset();
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Lỗi không xác định";
+      const message = error instanceof Error ? error.message : "Unexpected error.";
       toast.error(message);
     } finally {
       setIsSubmitting(false);
@@ -107,7 +107,7 @@ export default function FanIdeasPage() {
         window.localStorage.setItem(likeStorageKey, JSON.stringify(nextMap));
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Lỗi không xác định";
+      const message = error instanceof Error ? error.message : "Unexpected error.";
       toast.error(message);
     } finally {
       setLikePendingId(null);
@@ -127,7 +127,7 @@ export default function FanIdeasPage() {
               Fan Ideas & Requests
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Gửi ý tưởng cho release tiếp theo, gợi ý cover hoặc vote concept RF nên thử.
+              Share ideas for upcoming releases, cover suggestions, or concepts RF should explore.
             </p>
           </div>
 
@@ -178,7 +178,7 @@ export default function FanIdeasPage() {
                 </div>
               ) : (
                 <div className="rounded-2xl border border-dashed border-primary/20 bg-white/70 p-6 text-sm text-muted-foreground">
-                  Chưa có idea nào. Hãy là người đầu tiên nhé.
+                  No ideas yet. Be the first to share one.
                 </div>
               )}
             </div>
@@ -226,7 +226,7 @@ export default function FanIdeasPage() {
                         min={todayIso}
                         className="bg-white/80"
                       />
-                      <p className="text-xs text-muted-foreground">Ngày đề xuất không được trùng lịch release đã công bố.</p>
+                      <p className="text-xs text-muted-foreground">The proposed date should not conflict with announced releases.</p>
                     </div>
                     <Button type="submit" disabled={isSubmitting} className="w-full rounded-xl h-12 mt-2">
                       <Send className="w-4 h-4 mr-2" />

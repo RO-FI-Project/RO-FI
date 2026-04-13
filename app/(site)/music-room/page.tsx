@@ -56,7 +56,7 @@ export default function MusicRoomPage() {
               Music Room
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Không gian gacha 3D và singer ảo. Demo UI/animation để RF test trải nghiệm fan.
+              A 3D gacha lounge with a virtual singer. This is a UI/animation demo for testing fan experiences.
             </p>
           </div>
 
@@ -135,7 +135,7 @@ export default function MusicRoomPage() {
                 </div>
                 <h2 className="font-display text-2xl font-semibold mb-2">Music Gacha</h2>
                 <p className="text-muted-foreground mb-6 text-sm">
-                  Roll để mở một track ngẫu nhiên. Có cơ hội mở demo chưa phát hành.
+                  Roll to unlock a random track. You might get an unreleased demo.
                 </p>
 
                 <div className="h-32 w-full flex items-center justify-center mb-6">

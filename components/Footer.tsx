@@ -19,7 +19,7 @@ export function Footer() {
         </a>
 
         <p className="text-muted-foreground mb-6 max-w-md">
-          Cảm ơn bạn đã đồng hành cùng RF. Mỗi donate là một nguồn động lực để ra mắt sản phẩm mới.
+          Thanks for supporting RF. Every contribution helps fuel new releases.
         </p>
 
         {socials.length > 0 && (

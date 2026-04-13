@@ -33,7 +33,7 @@ export function DonationSection() {
 
   const copyToClipboard = (text: string, label: string) => {
     void navigator.clipboard.writeText(text);
-    toast.success(`${label} đã được copy.`);
+    toast.success(`${label} copied.`);
   };
 
   const logDonateClick = async (channel: "vn_bank" | "paypal" | "stripe") => {
@@ -90,8 +90,8 @@ export function DonationSection() {
             </h2>
 
             <p className="text-lg text-muted-foreground leading-relaxed">
-              Nếu âm nhạc hoặc dự án của RF làm bạn vui, hãy ủng hộ để mình đầu tư thêm thiết bị, phần mềm và dành
-              nhiều thời gian sáng tạo hơn.
+              If RF&apos;s music or projects have made you smile, consider supporting to fund new gear, software, and more
+              time to create.
             </p>
           </div>
 
@@ -140,7 +140,7 @@ export function DonationSection() {
 
               <div className="mb-8">
                 <Textarea
-                  placeholder="Để lại lời nhắn (tuỳ chọn)..."
+                  placeholder="Leave a message (optional)..."
                   value={message}
                   onChange={(event) => setMessage(event.target.value)}
                   className="bg-white/50 border-primary/10 rounded-3xl resize-none min-h-[100px] focus-visible:ring-primary/20"
@@ -199,7 +199,7 @@ export function DonationSection() {
                           <p className="font-mono text-primary font-bold text-lg">{donation.bankAccountNumber}</p>
                           <button
                             type="button"
-                            onClick={() => copyToClipboard(donation.bankAccountNumber, "Số tài khoản")}
+                            onClick={() => copyToClipboard(donation.bankAccountNumber, "Account number")}
                             className="p-1.5 hover:bg-primary/10 rounded-md text-muted-foreground hover:text-primary transition-colors"
                           >
                             <Copy className="w-4 h-4" />
@@ -240,7 +240,7 @@ export function DonationSection() {
                       Donate via Stripe
                     </a>
                     <p className="text-center text-xs text-muted-foreground mt-4">
-                      Thanh toán quốc tế an toàn. 100% chuyển trực tiếp đến RF.
+                      Secure international payments. 100% goes directly to RF.
                     </p>
                   </motion.div>
                 )}

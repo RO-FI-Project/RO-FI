@@ -24,8 +24,8 @@ export function Navbar() {
   const navLinks = isHome
     ? [
         { name: "Donate", href: "#donate" },
-        { name: "Lịch phát hành", href: "#releases" },
-        { name: "Hợp tác", href: "#contact" },
+        { name: "Release schedule", href: "#releases" },
+        { name: "Collaborate", href: "#contact" },
       ]
     : [];
   const exploreLinks = [
@@ -59,11 +59,11 @@ export function Navbar() {
           ))}
           <Popover>
             <PopoverTrigger className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
-              Khám phá
+              Explore
             </PopoverTrigger>
             <PopoverContent className="w-56">
               <div className="space-y-1">
-                <p className="px-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Trang riêng</p>
+                <p className="px-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Destinations</p>
                 {exploreLinks.map((link) => (
                   <Link
                     key={link.name}
@@ -78,7 +78,7 @@ export function Navbar() {
           </Popover>
           {isHome ? (
             <a href="#donate" className={buttonVariants({ className: "rounded-full px-6" })}>
-              Ủng hộ ngay
+              Support now
             </a>
           ) : null}
         </nav>
@@ -105,7 +105,7 @@ export function Navbar() {
             </a>
           ))}
           <div className="pt-2">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Khám phá</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Explore</p>
             <div className="flex flex-col gap-2">
               {exploreLinks.map((link) => (
                 <Link
@@ -125,7 +125,7 @@ export function Navbar() {
               className={buttonVariants({ className: "w-full rounded-xl mt-2" })}
               onClick={() => setIsMobileMenuOpen(false)}
             >
-              Ủng hộ ngay
+              Support now
             </a>
           ) : null}
         </div>
