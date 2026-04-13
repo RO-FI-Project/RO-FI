@@ -11,6 +11,8 @@
 import type * as adminAudit from "../adminAudit.js";
 import type * as contact from "../contact.js";
 import type * as donations from "../donations.js";
+import type * as fanIdeas from "../fanIdeas.js";
+import type * as fanIdeasAdmin from "../fanIdeasAdmin.js";
 import type * as leadsAdmin from "../leadsAdmin.js";
 import type * as releases from "../releases.js";
 import type * as releasesAdmin from "../releasesAdmin.js";
@@ -26,6 +28,8 @@ declare const fullApi: ApiFromModules<{
   adminAudit: typeof adminAudit;
   contact: typeof contact;
   donations: typeof donations;
+  fanIdeas: typeof fanIdeas;
+  fanIdeasAdmin: typeof fanIdeasAdmin;
   leadsAdmin: typeof leadsAdmin;
   releases: typeof releases;
   releasesAdmin: typeof releasesAdmin;

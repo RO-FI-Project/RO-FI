@@ -12,6 +12,15 @@ export default defineSchema({
     links: v.optional(v.array(v.string())),
     isPublic: v.boolean(),
   }).index("by_releaseDate", ["releaseDate"]),
+  fanIdeas: defineTable({
+    fanName: v.string(),
+    idea: v.string(),
+    proposedDate: v.string(),
+    status: v.union(v.literal("new"), v.literal("reviewing"), v.literal("approved"), v.literal("declined")),
+    createdAt: v.number(),
+  })
+    .index("by_createdAt", ["createdAt"])
+    .index("by_status", ["status"]),
   donationClicks: defineTable({
     channel: v.union(v.literal("vn_bank"), v.literal("paypal"), v.literal("stripe")),
     amountPreset: v.optional(v.string()),

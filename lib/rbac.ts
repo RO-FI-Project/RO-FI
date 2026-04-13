@@ -6,6 +6,8 @@ export type AdminPermission =
   | "releases.write"
   | "leads.read"
   | "leads.write"
+  | "fanIdeas.read"
+  | "fanIdeas.write"
   | "settings.read"
   | "settings.write"
   | "audit.read";
@@ -17,12 +19,24 @@ const rolePermissions: Record<AdminRole, AdminPermission[]> = {
     "releases.write",
     "leads.read",
     "leads.write",
+    "fanIdeas.read",
+    "fanIdeas.write",
     "settings.read",
     "settings.write",
     "audit.read",
   ],
-  editor: ["dashboard.read", "releases.read", "releases.write", "leads.read", "leads.write", "settings.read", "settings.write"],
-  viewer: ["dashboard.read", "releases.read", "leads.read", "settings.read", "audit.read"],
+  editor: [
+    "dashboard.read",
+    "releases.read",
+    "releases.write",
+    "leads.read",
+    "leads.write",
+    "fanIdeas.read",
+    "fanIdeas.write",
+    "settings.read",
+    "settings.write",
+  ],
+  viewer: ["dashboard.read", "releases.read", "leads.read", "fanIdeas.read", "settings.read", "audit.read"],
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>

@@ -16,6 +16,7 @@ const navItems = [
   { label: "Dashboard", href: "/admin/dashboard" },
   { label: "Releases", href: "/admin/releases" },
   { label: "Leads", href: "/admin/leads" },
+  { label: "Fan Ideas", href: "/admin/fan-ideas" },
   { label: "Settings", href: "/admin/settings" },
   { label: "Audit Log", href: "/admin/audit" },
 ];

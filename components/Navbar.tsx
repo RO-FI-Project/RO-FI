@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { buttonVariants } from "@/components/ui/button";
 import { Menu, Music, X } from "lucide-react";
@@ -19,6 +20,7 @@ export function Navbar() {
   const navLinks = [
     { name: "Donate", href: "#donate" },
     { name: "Lịch phát hành", href: "#releases" },
+    { name: "Fan Ideas", href: "/fan-ideas" },
     { name: "Hợp tác", href: "#contact" },
   ];
 
@@ -37,15 +39,25 @@ export function Navbar() {
         </a>
 
         <nav className="hidden md:flex items-center gap-8">
-          {navLinks.map((link) => (
-            <a
-              key={link.name}
-              href={link.href}
-              className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-            >
-              {link.name}
-            </a>
-          ))}
+          {navLinks.map((link) =>
+            link.href.startsWith("/") ? (
+              <Link
+                key={link.name}
+                href={link.href}
+                className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+              >
+                {link.name}
+              </Link>
+            ) : (
+              <a
+                key={link.name}
+                href={link.href}
+                className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+              >
+                {link.name}
+              </a>
+            )
+          )}
           <a href="#donate" className={buttonVariants({ className: "rounded-full px-6" })}>
             Ủng hộ ngay
           </a>
@@ -62,16 +74,27 @@ export function Navbar() {
 
       {isMobileMenuOpen && (
         <div className="md:hidden absolute top-full left-0 right-0 bg-white border-b border-primary/10 shadow-lg py-4 px-4 flex flex-col gap-4 animate-in slide-in-from-top-2">
-          {navLinks.map((link) => (
-            <a
-              key={link.name}
-              href={link.href}
-              className="text-base font-medium text-foreground py-2 border-b border-muted/50"
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              {link.name}
-            </a>
-          ))}
+          {navLinks.map((link) =>
+            link.href.startsWith("/") ? (
+              <Link
+                key={link.name}
+                href={link.href}
+                className="text-base font-medium text-foreground py-2 border-b border-muted/50"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                {link.name}
+              </Link>
+            ) : (
+              <a
+                key={link.name}
+                href={link.href}
+                className="text-base font-medium text-foreground py-2 border-b border-muted/50"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                {link.name}
+              </a>
+            )
+          )}
           <a
             href="#donate"
             className={buttonVariants({ className: "w-full rounded-xl mt-2" })}
