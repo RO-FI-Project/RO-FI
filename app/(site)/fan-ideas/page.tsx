@@ -1,39 +1,33 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
+import type { Id } from "@/convex/_generated/dataModel";
 import { api } from "@/convex/_generated/api";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { CalendarDays, Sparkles } from "lucide-react";
-import { format } from "date-fns";
-import { vi } from "date-fns/locale";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Sparkles, Heart, Send } from "lucide-react";
 import { toast } from "sonner";
 
 type FanIdeaPayload = {
   fanName: string;
+  title: string;
   idea: string;
   proposedDate: string;
 };
 
 export default function FanIdeasPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [likePendingId, setLikePendingId] = useState<Id<"fanIdeas"> | null>(null);
   const formRef = useRef<HTMLFormElement | null>(null);
   const submitIdea = useMutation(api.fanIdeas.submit);
-  const releases = useQuery(api.releases.listPublic, {});
+  const incrementLike = useMutation(api.fanIdeas.incrementLike);
+  const ideas = useQuery(api.fanIdeas.listPublicRecent, { limit: 12 });
   const todayIso = new Date().toISOString().slice(0, 10);
-
-  const releaseDates = useMemo(
-    () => (releases ?? []).map((release) => release.releaseDate).sort((a, b) => a.localeCompare(b)),
-    [releases]
-  );
-  const releaseDatesSet = useMemo(() => new Set(releaseDates), [releaseDates]);
 
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -50,18 +44,13 @@ export default function FanIdeasPage() {
     const formData = new FormData(form);
     const payload: FanIdeaPayload = {
       fanName: String(formData.get("fanName") ?? "").trim(),
+      title: String(formData.get("title") ?? "").trim(),
       idea: String(formData.get("idea") ?? "").trim(),
       proposedDate: String(formData.get("proposedDate") ?? ""),
     };
 
-    if (!payload.fanName || !payload.idea || !payload.proposedDate) {
+    if (!payload.fanName || !payload.title || !payload.idea || !payload.proposedDate) {
       toast.error("Vui lòng điền đầy đủ thông tin.");
-      setIsSubmitting(false);
-      return;
-    }
-
-    if (releaseDatesSet.has(payload.proposedDate)) {
-      toast.error("Ngày này đã có lịch phát hành. Hãy chọn ngày khác nhé.");
       setIsSubmitting(false);
       return;
     }
@@ -78,102 +67,139 @@ export default function FanIdeasPage() {
     }
   };
 
+  const handleLike = async (id: Id<"fanIdeas">) => {
+    if (likePendingId) return;
+    setLikePendingId(id);
+    try {
+      await incrementLike({ id });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Lỗi không xác định";
+      toast.error(message);
+    } finally {
+      setLikePendingId(null);
+    }
+  };
+
   return (
-    <main className="min-h-screen flex flex-col">
+    <main className="min-h-screen flex flex-col bg-background">
       <Navbar />
-      <div className="flex-1 pt-24">
-        <section className="py-16 md:py-24 bg-primary/5">
-          <div className="container mx-auto px-4 max-w-5xl">
-            <div className="text-center mb-12">
-              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
-                Fan Space
-              </p>
-              <h1 className="font-display text-3xl md:text-4xl font-semibold mb-4 flex items-center justify-center gap-2">
-                <Sparkles className="w-8 h-8 text-primary" />
-                Fan Ideas
-              </h1>
-              <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-                Fan góp ý lịch ra nhạc mong muốn. RF sẽ cân nhắc và cập nhật khi phù hợp.
-              </p>
+      <div className="flex-1 pt-24 pb-16 md:pt-32 md:pb-24">
+        <div className="container mx-auto px-4 max-w-6xl">
+          <div className="text-center mb-12">
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
+              Community Space
+            </p>
+            <h1 className="font-display text-4xl md:text-5xl font-semibold text-foreground mb-4">
+              Fan Ideas & Requests
+            </h1>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Gửi ý tưởng cho release tiếp theo, gợi ý cover hoặc vote concept RF nên thử.
+            </p>
+          </div>
+
+          <div className="grid lg:grid-cols-[1fr_400px] gap-12 items-start">
+            <div className="space-y-6">
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-2xl font-display font-semibold flex items-center gap-2">
+                  <Sparkles className="w-6 h-6 text-primary" />
+                  Recent Ideas
+                </h2>
+              </div>
+
+              {ideas && ideas.length > 0 ? (
+                <div className="grid sm:grid-cols-2 gap-6">
+                  {ideas.map((idea) => {
+                    const title = idea.title?.trim() || "Untitled Idea";
+                    const likes = idea.likes ?? 0;
+                    return (
+                    <Card
+                      key={idea._id}
+                      className="border-primary/10 shadow-sm hover:shadow-md transition-all bg-white/60 backdrop-blur-sm"
+                    >
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-lg font-display leading-tight">{title}</CardTitle>
+                        <p className="text-sm text-muted-foreground">by {idea.fanName}</p>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-foreground/80 text-sm mb-4 line-clamp-3">“{idea.idea}”</p>
+                        <div className="flex items-center gap-2 text-primary">
+                          <button
+                            type="button"
+                            disabled={likePendingId === idea._id}
+                            onClick={() => handleLike(idea._id)}
+                            className="hover:bg-primary/10 p-1.5 rounded-full transition-colors disabled:opacity-60"
+                          >
+                            <Heart className="w-5 h-5" />
+                          </button>
+                          <span className="text-sm font-semibold">{likes}</span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                  })}
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-dashed border-primary/20 bg-white/70 p-6 text-sm text-muted-foreground">
+                  Chưa có idea nào. Hãy là người đầu tiên nhé.
+                </div>
+              )}
             </div>
 
-            <div className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr]">
-              <Card className="border-none shadow-lg shadow-primary/5 bg-white/80 backdrop-blur-sm">
-                <CardContent className="pt-6">
-                  <div className="rounded-2xl border border-primary/10 bg-white/70 p-4 text-sm text-muted-foreground mb-6">
-                    Ngày đề xuất không được trùng exact với lịch phát hành đã công bố.
-                  </div>
-                  <form ref={formRef} onSubmit={onSubmit} className="space-y-6">
+            <div className="sticky top-28">
+              <Card className="border-none shadow-xl shadow-primary/5 bg-primary/5">
+                <CardHeader>
+                  <CardTitle className="font-display text-2xl">Submit an Idea</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <form ref={formRef} onSubmit={onSubmit} className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="fanName">Tên fan</Label>
-                      <Input id="fanName" name="fanName" required placeholder="Tên của bạn" className="bg-white/50 rounded-xl" />
+                      <label htmlFor="fanName" className="text-sm font-medium">
+                        Your Name / Nickname
+                      </label>
+                      <Input id="fanName" name="fanName" required placeholder="How should I call you?" className="bg-white/80" />
                     </div>
-
                     <div className="space-y-2">
-                      <Label htmlFor="proposedDate">Ngày phát hành đề xuất</Label>
+                      <label htmlFor="title" className="text-sm font-medium">
+                        Idea Title
+                      </label>
+                      <Input id="title" name="title" required placeholder="e.g., Acoustic Cover of..." className="bg-white/80" />
+                    </div>
+                    <div className="space-y-2">
+                      <label htmlFor="idea" className="text-sm font-medium">
+                        Details
+                      </label>
+                      <Textarea
+                        id="idea"
+                        name="idea"
+                        required
+                        placeholder="Tell me more about your idea! What's the vibe?"
+                        className="min-h-[120px] bg-white/80 resize-none"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label htmlFor="proposedDate" className="text-sm font-medium">
+                        Proposed Date
+                      </label>
                       <Input
                         id="proposedDate"
                         name="proposedDate"
                         type="date"
                         required
                         min={todayIso}
-                        className="bg-white/50 rounded-xl"
+                        className="bg-white/80"
                       />
+                      <p className="text-xs text-muted-foreground">Ngày đề xuất không được trùng lịch release đã công bố.</p>
                     </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="idea">Ý tưởng của bạn</Label>
-                      <Textarea
-                        id="idea"
-                        name="idea"
-                        required
-                        placeholder="Ví dụ: Concept, cảm hứng, thể loại, collab..."
-                        className="min-h-[160px] bg-white/50 rounded-xl resize-none"
-                      />
-                    </div>
-
-                    <Button type="submit" size="lg" disabled={isSubmitting} className="w-full rounded-xl font-semibold text-base h-12">
-                      {isSubmitting ? "Đang gửi..." : "Gửi ý tưởng"}
+                    <Button type="submit" disabled={isSubmitting} className="w-full rounded-xl h-12 mt-2">
+                      <Send className="w-4 h-4 mr-2" />
+                      {isSubmitting ? "Submitting..." : "Send Idea"}
                     </Button>
                   </form>
                 </CardContent>
               </Card>
-
-              <div className="space-y-4">
-                <Card className="border-none shadow-lg shadow-primary/5 bg-white/80 backdrop-blur-sm">
-                  <CardContent className="pt-6 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h2 className="font-display text-lg font-semibold flex items-center gap-2">
-                        <CalendarDays className="w-5 h-5 text-primary" />
-                        Ngày đã có lịch
-                      </h2>
-                      <Badge className="rounded-full px-3">Public</Badge>
-                    </div>
-                    {releaseDates.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">Chưa có lịch phát hành công khai.</p>
-                    ) : (
-                      <div className="space-y-2">
-                        {releaseDates.slice(0, 10).map((date) => (
-                          <div key={date} className="rounded-xl border border-primary/10 bg-white/70 px-3 py-2 text-sm">
-                            {format(new Date(date), "dd/MM/yyyy", { locale: vi })}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {releaseDates.length > 10 && (
-                      <p className="text-xs text-muted-foreground">Đã hiển thị 10 ngày gần nhất.</p>
-                    )}
-                  </CardContent>
-                </Card>
-                <Card className="border-none shadow-lg shadow-primary/5 bg-white/80 backdrop-blur-sm">
-                  <CardContent className="pt-6 text-sm text-muted-foreground">
-                    Mọi ý tưởng đều được ghi nhận. RF sẽ chủ động liên hệ hoặc cập nhật lịch nếu phù hợp.
-                  </CardContent>
-                </Card>
-              </div>
             </div>
           </div>
-        </section>
+        </div>
       </div>
       <Footer />
     </main>

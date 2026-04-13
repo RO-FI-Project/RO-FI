@@ -14,8 +14,10 @@ export default defineSchema({
   }).index("by_releaseDate", ["releaseDate"]),
   fanIdeas: defineTable({
     fanName: v.string(),
+    title: v.optional(v.string()),
     idea: v.string(),
     proposedDate: v.string(),
+    likes: v.optional(v.number()),
     status: v.union(v.literal("new"), v.literal("reviewing"), v.literal("approved"), v.literal("declined")),
     createdAt: v.number(),
   })

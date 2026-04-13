@@ -72,7 +72,8 @@ export default function FanIdeasAdminPage() {
                       <p className="text-xs text-muted-foreground">
                         {new Date(idea.createdAt).toLocaleString("vi-VN")}
                       </p>
-                      <h3 className="text-lg font-semibold">{idea.fanName}</h3>
+                      <h3 className="text-lg font-semibold">{idea.title?.trim() || "Untitled Idea"}</h3>
+                      <p className="text-sm text-muted-foreground">by {idea.fanName}</p>
                       <p className="text-sm text-muted-foreground">Ngày đề xuất: {idea.proposedDate}</p>
                     </div>
                     <Badge className="rounded-full">{idea.status}</Badge>
