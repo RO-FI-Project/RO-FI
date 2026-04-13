@@ -32,6 +32,11 @@ export default function FanIdeasPage() {
   const todayIso = new Date().toISOString().slice(0, 10);
   const likeStorageKey = "rf_fan_idea_likes";
 
+  const getFormString = (formData: FormData, key: string) => {
+    const value = formData.get(key);
+    return typeof value === "string" ? value : "";
+  };
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
@@ -60,10 +65,10 @@ export default function FanIdeasPage() {
 
     const formData = new FormData(form);
     const payload: FanIdeaPayload = {
-      fanName: String(formData.get("fanName") ?? "").trim(),
-      title: String(formData.get("title") ?? "").trim(),
-      idea: String(formData.get("idea") ?? "").trim(),
-      proposedDate: String(formData.get("proposedDate") ?? ""),
+      fanName: getFormString(formData, "fanName").trim(),
+      title: getFormString(formData, "title").trim(),
+      idea: getFormString(formData, "idea").trim(),
+      proposedDate: getFormString(formData, "proposedDate"),
     };
 
     if (!payload.fanName || !payload.title || !payload.idea || !payload.proposedDate) {

@@ -22,7 +22,7 @@ export function DonationSection() {
   const donation = settings?.donation ?? fallbackSettings;
 
   const copyToClipboard = (text: string, label: string) => {
-    navigator.clipboard.writeText(text);
+    void navigator.clipboard.writeText(text);
     toast.success(`${label} đã được copy.`);
   };
 

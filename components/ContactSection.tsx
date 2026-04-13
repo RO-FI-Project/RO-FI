@@ -24,6 +24,11 @@ export function ContactSection() {
   const formRef = useRef<HTMLFormElement | null>(null);
   const todayIso = new Date().toISOString().slice(0, 10);
 
+  const getFormString = (formData: FormData, key: string) => {
+    const value = formData.get(key);
+    return typeof value === "string" ? value : "";
+  };
+
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (isSubmitting) return;
@@ -36,7 +41,7 @@ export function ContactSection() {
       return;
     }
     const formData = new FormData(form);
-    const rawDeadline = String(formData.get("deadline") ?? "");
+    const rawDeadline = getFormString(formData, "deadline");
     const normalizedDeadline = rawDeadline
       ? (() => {
           const [year, month, day] = rawDeadline.split("-");
@@ -45,13 +50,13 @@ export function ContactSection() {
         })()
       : "";
     const payload: ContactPayload = {
-      name: String(formData.get("name") ?? ""),
-      email: String(formData.get("email") ?? ""),
-      organization: String(formData.get("organization") ?? ""),
-      budget: String(formData.get("budget") ?? ""),
+      name: getFormString(formData, "name"),
+      email: getFormString(formData, "email"),
+      organization: getFormString(formData, "organization"),
+      budget: getFormString(formData, "budget"),
       deadline: normalizedDeadline,
-      message: String(formData.get("message") ?? ""),
-      company: String(formData.get("company") ?? ""),
+      message: getFormString(formData, "message"),
+      company: getFormString(formData, "company"),
     };
 
     try {
