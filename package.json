@@ -8,7 +8,11 @@
     "dev:convex": "convex dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "check:lint": "eslint . && bunx oxlint --type-aware --type-check",
+    "check:type": "bunx tsc --noEmit",
+    "check:build": "bun run build",
+    "preflight": "bun run check:lint && bun run check:type && bun run check:build"
   },
   "dependencies": {
     "@base-ui/react": "^1.3.0",
