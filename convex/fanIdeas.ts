@@ -58,6 +58,22 @@ export const incrementLike = mutationGeneric({
     if (!idea) {
       throw new Error("Ý tưởng không tồn tại.");
     }
-    await ctx.db.patch(args.id, { likes: idea.likes + 1 });
+    const currentLikes = Number.isFinite(idea.likes) ? idea.likes : 0;
+    await ctx.db.patch(args.id, { likes: currentLikes + 1 });
+  },
+});
+
+export const decrementLike = mutationGeneric({
+  args: {
+    id: v.id("fanIdeas"),
+  },
+  handler: async (ctx, args) => {
+    const idea = await ctx.db.get(args.id);
+    if (!idea) {
+      throw new Error("Ý tưởng không tồn tại.");
+    }
+    const currentLikes = Number.isFinite(idea.likes) ? idea.likes : 0;
+    const nextLikes = Math.max(0, currentLikes - 1);
+    await ctx.db.patch(args.id, { likes: nextLikes });
   },
 });

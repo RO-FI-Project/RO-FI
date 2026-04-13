@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import type { Id } from "@/convex/_generated/dataModel";
 import { api } from "@/convex/_generated/api";
@@ -23,11 +23,28 @@ type FanIdeaPayload = {
 export default function FanIdeasPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [likePendingId, setLikePendingId] = useState<Id<"fanIdeas"> | null>(null);
+  const [likedMap, setLikedMap] = useState<Record<string, boolean>>({});
   const formRef = useRef<HTMLFormElement | null>(null);
   const submitIdea = useMutation(api.fanIdeas.submit);
   const incrementLike = useMutation(api.fanIdeas.incrementLike);
+  const decrementLike = useMutation(api.fanIdeas.decrementLike);
   const ideas = useQuery(api.fanIdeas.listPublicRecent, { limit: 12 });
   const todayIso = new Date().toISOString().slice(0, 10);
+  const likeStorageKey = "rf_fan_idea_likes";
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem(likeStorageKey);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as Record<string, boolean>;
+      if (parsed && typeof parsed === "object") {
+        setLikedMap(parsed);
+      }
+    } catch {
+      setLikedMap({});
+    }
+  }, []);
 
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -71,7 +88,19 @@ export default function FanIdeasPage() {
     if (likePendingId) return;
     setLikePendingId(id);
     try {
-      await incrementLike({ id });
+      if (likedMap[id]) {
+        await decrementLike({ id });
+      } else {
+        await incrementLike({ id });
+      }
+      const nextMap = { ...likedMap, [id]: !likedMap[id] };
+      if (!nextMap[id]) {
+        delete nextMap[id];
+      }
+      setLikedMap(nextMap);
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(likeStorageKey, JSON.stringify(nextMap));
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Lỗi không xác định";
       toast.error(message);
@@ -110,7 +139,9 @@ export default function FanIdeasPage() {
                 <div className="grid sm:grid-cols-2 gap-6">
                   {ideas.map((idea) => {
                     const title = idea.title?.trim() || "Untitled Idea";
-                    const likes = idea.likes ?? 0;
+                    const rawLikes = Number(idea.likes ?? 0);
+                    const likes = Number.isFinite(rawLikes) ? rawLikes : 0;
+                    const hasLiked = Boolean(likedMap[idea._id]);
                     return (
                     <Card
                       key={idea._id}
@@ -127,9 +158,11 @@ export default function FanIdeasPage() {
                             type="button"
                             disabled={likePendingId === idea._id}
                             onClick={() => handleLike(idea._id)}
-                            className="hover:bg-primary/10 p-1.5 rounded-full transition-colors disabled:opacity-60"
+                            className={`p-1.5 rounded-full transition-colors disabled:opacity-60 ${
+                              hasLiked ? "text-primary" : "hover:bg-primary/10"
+                            }`}
                           >
-                            <Heart className="w-5 h-5" />
+                            <Heart className={`w-5 h-5 ${hasLiked ? "fill-current" : ""}`} />
                           </button>
                           <span className="text-sm font-semibold">{likes}</span>
                         </div>
