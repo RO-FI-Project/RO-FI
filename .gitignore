@@ -23,3 +23,4 @@ AGENTS.md
 # clerk configuration (can include secrets)
 /.clerk/
 /docs
+/public
