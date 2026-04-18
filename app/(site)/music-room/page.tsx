@@ -1,44 +1,125 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dices, Disc3, Music, Pause, Play, Sparkles } from "lucide-react";
-
-const songs = [
-  "Sakura Dreams (Lofi Mix)",
-  "Neon Nights (Acoustic)",
-  "Cyberpunk City Pop",
-  "Autumn Leaves",
-  "Midnight Drive",
-  "Starlight Melody",
-];
+import { Dices, Disc3, Pause, Play, Sparkles } from "lucide-react";
+import { toast } from "sonner";
+import { SingerAvatar } from "@/components/music-room/SingerAvatar";
+import {
+  type MusicRoomState,
+  type RollHistoryItem,
+  getDefaultMusicRoomState,
+  getSongById,
+  loadMusicRoomState,
+  musicRoomSongs,
+  rollWeightedSong,
+  saveMusicRoomState,
+} from "@/lib/music-room";
 
 export default function MusicRoomPage() {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const rollTimerRef = useRef<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentSong, setCurrentSong] = useState(songs[0]);
+  const [beatLevel, setBeatLevel] = useState(0);
+  const [musicRoomState, setMusicRoomState] = useState<MusicRoomState>(getDefaultMusicRoomState);
   const [isRolling, setIsRolling] = useState(false);
   const [gachaResult, setGachaResult] = useState<{ title: string; rarity: string } | null>(null);
+  const currentSong = useMemo(
+    () => getSongById(musicRoomState.lastSongId) ?? musicRoomSongs[0],
+    [musicRoomState.lastSongId]
+  );
+  const singerState = isRolling ? "excited" : isPlaying ? "singing" : "idle";
+
+  useEffect(() => {
+    setMusicRoomState(loadMusicRoomState());
+  }, []);
+
+  useEffect(() => {
+    saveMusicRoomState(musicRoomState);
+  }, [musicRoomState]);
+
+  useEffect(() => {
+    if (!isPlaying) {
+      setBeatLevel(0);
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      setBeatLevel((value) => (value >= 3 ? 0 : value + 1));
+    }, 280);
+
+    return () => window.clearInterval(interval);
+  }, [isPlaying]);
+
+  useEffect(() => {
+    return () => {
+      if (rollTimerRef.current) {
+        window.clearTimeout(rollTimerRef.current);
+      }
+    };
+  }, []);
+
+  const playCurrentSong = async () => {
+    if (!audioRef.current) return;
+    try {
+      audioRef.current.load();
+      await audioRef.current.play();
+      setIsPlaying(true);
+    } catch {
+      setIsPlaying(false);
+      toast.error("Không thể phát bài hát mẫu. Hãy thêm audio file vào public/audio/music-room.");
+    }
+  };
 
   const rollGacha = () => {
     if (isRolling) return;
     setIsRolling(true);
     setGachaResult(null);
 
-    setTimeout(() => {
-      const nextSong = songs[Math.floor(Math.random() * songs.length)];
-      const isRare = Math.random() > 0.8;
-      setGachaResult({
-        title: nextSong,
-        rarity: isRare ? "Super Rare" : "Common",
+    rollTimerRef.current = window.setTimeout(() => {
+      setMusicRoomState((prev) => {
+        const { song, rarity } = rollWeightedSong();
+        const nextHistory: RollHistoryItem[] = [
+          { songId: song.id, rarity, rolledAt: Date.now() },
+          ...prev.rollHistory,
+        ].slice(0, 20);
+
+        setGachaResult({
+          title: song.title,
+          rarity,
+        });
+
+        return {
+          ...prev,
+          lastSongId: song.id,
+          rollHistory: nextHistory,
+        };
       });
-      setCurrentSong(nextSong);
-      setIsPlaying(true);
       setIsRolling(false);
+      void playCurrentSong();
     }, 1600);
+  };
+
+  const togglePlayback = async () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    if (isPlaying) {
+      audio.pause();
+      setIsPlaying(false);
+      return;
+    }
+
+    try {
+      await audio.play();
+      setIsPlaying(true);
+    } catch {
+      toast.error("Không thể tiếp tục phát bài hát.");
+    }
   };
 
   return (
@@ -56,75 +137,47 @@ export default function MusicRoomPage() {
               Music Room
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              A 3D gacha lounge with a virtual singer. This is a UI/animation demo for testing fan experiences.
+              Roll a chill track, let the virtual singer perform, and keep your cozy listening history for this device.
             </p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-10 items-center">
             <div className="relative flex flex-col items-center justify-center">
-              <div className="absolute bottom-4 size-56 rounded-full bg-primary/20 blur-2xl" />
-
-              <motion.div
-                className="relative z-10 w-48 h-64 flex flex-col items-center justify-end mb-10"
-                animate={{
-                  y: isPlaying ? [0, -12, 0] : [0, -4, 0],
-                  rotate: isPlaying ? [0, 2, -2, 0] : 0,
-                }}
-                transition={{
-                  repeat: Infinity,
-                  duration: isPlaying ? 0.8 : 3,
-                  ease: "easeInOut",
-                }}
-              >
-                <div className="w-24 h-24 bg-secondary rounded-full mb-[-10px] z-20 relative shadow-inner">
-                  <div className="absolute top-9 left-4 w-3 h-4 bg-foreground rounded-full" />
-                  <div className="absolute top-9 right-4 w-3 h-4 bg-foreground rounded-full" />
-                  <div className="absolute top-14 left-2 w-4 h-2 bg-primary/40 rounded-full blur-sm" />
-                  <div className="absolute top-14 right-2 w-4 h-2 bg-primary/40 rounded-full blur-sm" />
-                  <motion.div
-                    className="absolute top-14 left-1/2 -translate-x-1/2 w-4 bg-foreground rounded-b-full"
-                    animate={{ height: isPlaying ? [2, 8, 2] : 2 }}
-                    transition={{ repeat: Infinity, duration: 0.4 }}
-                  />
-                  <div className="absolute top-1/2 -left-3 w-6 h-10 bg-primary rounded-full -translate-y-1/2" />
-                  <div className="absolute top-1/2 -right-3 w-6 h-10 bg-primary rounded-full -translate-y-1/2" />
-                  <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-28 h-12 border-t-4 border-primary rounded-t-full" />
-                </div>
-                <div className="w-20 h-28 bg-primary rounded-t-3xl relative z-10 overflow-hidden">
-                  <div className="absolute top-4 left-1/2 -translate-x-1/2 w-8 h-8 bg-white/20 rounded-full" />
-                </div>
-
-                <AnimatePresence>
-                  {isPlaying ? (
-                    <motion.div
-                      key="notes"
-                      className="absolute -top-6 -right-10 text-primary"
-                      initial={{ opacity: 0, y: 10, scale: 0.5 }}
-                      animate={{ opacity: [0, 1, 0], y: -40, scale: 1, rotate: 10 }}
-                      transition={{ repeat: Infinity, duration: 2 }}
-                    >
-                      <Music className="w-6 h-6" />
-                    </motion.div>
-                  ) : null}
-                </AnimatePresence>
-              </motion.div>
+              <SingerAvatar state={singerState} beatLevel={beatLevel} />
 
               <div className="bg-white/80 backdrop-blur-md p-4 rounded-2xl shadow-lg border border-primary/10 w-full max-w-sm flex flex-col items-center gap-3 relative z-20">
                 <div className="text-center">
                   <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">
                     Now Playing
                   </p>
-                  <p className="font-display font-semibold text-foreground truncate w-56">{currentSong}</p>
+                  <p className="font-display font-semibold text-foreground truncate w-56">{currentSong.title}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{currentSong.theme}</p>
                 </div>
                 <div className="flex items-center gap-4">
                   <Button
                     size="icon"
                     className="w-12 h-12 rounded-full shadow-md shadow-primary/20"
-                    onClick={() => setIsPlaying((value) => !value)}
+                    onClick={togglePlayback}
                   >
                     {isPlaying ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 fill-current ml-1" />}
                   </Button>
+                  <Badge className="rounded-full">{currentSong.rarity}</Badge>
+                  <Badge variant="secondary" className="rounded-full">
+                    {currentSong.durationLabel}
+                  </Badge>
                 </div>
+                <audio
+                  ref={audioRef}
+                  src={currentSong.src}
+                  preload="none"
+                  onPlay={() => setIsPlaying(true)}
+                  onPause={() => setIsPlaying(false)}
+                  onEnded={() => setIsPlaying(false)}
+                  onError={() => {
+                    setIsPlaying(false);
+                    toast.error("Không tìm thấy audio demo cho bài hát này.");
+                  }}
+                />
               </div>
             </div>
 
@@ -135,7 +188,7 @@ export default function MusicRoomPage() {
                 </div>
                 <h2 className="font-display text-2xl font-semibold mb-2">Music Gacha</h2>
                 <p className="text-muted-foreground mb-6 text-sm">
-                  Roll to unlock a random track. You might get an unreleased demo.
+                  Roll a random chill track. Super Rare pulls will feel like a little encore reward.
                 </p>
 
                 <div className="h-32 w-full flex items-center justify-center mb-6">
@@ -178,6 +231,32 @@ export default function MusicRoomPage() {
                 >
                   {isRolling ? "Rolling..." : "Roll Gacha"}
                 </Button>
+
+                <div className="mt-6 w-full rounded-2xl border border-primary/10 bg-white/70 p-4 text-left">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Recent rolls</p>
+                  <div className="mt-3 space-y-2">
+                    {musicRoomState.rollHistory.length > 0 ? (
+                      musicRoomState.rollHistory.slice(0, 4).map((item) => {
+                        const song = getSongById(item.songId);
+                        return (
+                          <div key={`${item.songId}-${item.rolledAt}`} className="flex items-center justify-between gap-3 text-sm">
+                            <div className="min-w-0">
+                              <p className="truncate font-medium text-foreground">{song?.title ?? "Unknown song"}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {new Date(item.rolledAt).toLocaleString("vi-VN")}
+                              </p>
+                            </div>
+                            <Badge variant="secondary" className="rounded-full">
+                              {item.rarity}
+                            </Badge>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <p className="text-sm text-muted-foreground">Roll your first song to start a cozy history.</p>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
