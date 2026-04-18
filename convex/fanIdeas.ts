@@ -2,6 +2,7 @@ import { mutationGeneric, queryGeneric } from "convex/server";
 import { v } from "convex/values";
 
 const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+const publicStatuses = new Set(["approved", "reviewing"]);
 
 export const submit = mutationGeneric({
   args: {
@@ -27,7 +28,7 @@ export const submit = mutationGeneric({
       throw new Error("Ngày này đã có lịch phát hành.");
     }
 
-    await ctx.db.insert("fanIdeas", {
+    return await ctx.db.insert("fanIdeas", {
       fanName: args.fanName.trim(),
       title: args.title.trim(),
       idea: args.idea.trim(),
@@ -45,7 +46,30 @@ export const listPublicRecent = queryGeneric({
   },
   handler: async (ctx, args) => {
     const limit = Math.min(args.limit ?? 12, 50);
-    return await ctx.db.query("fanIdeas").order("desc").take(limit);
+    const ideas = await ctx.db.query("fanIdeas").order("desc").collect();
+    return ideas.filter((idea) => publicStatuses.has(idea.status)).slice(0, limit);
+  },
+});
+
+export const listByIdsPublicStatus = queryGeneric({
+  args: {
+    ids: v.array(v.id("fanIdeas")),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = Math.min(args.limit ?? 12, 50);
+    const ideas = await Promise.all(args.ids.map((id) => ctx.db.get(id)));
+
+    return ideas
+      .filter((idea): idea is NonNullable<typeof idea> => Boolean(idea))
+      .sort((left, right) => right.createdAt - left.createdAt)
+      .slice(0, limit)
+      .map((idea) => ({
+        _id: idea._id,
+        title: idea.title,
+        status: idea.status,
+        createdAt: idea.createdAt,
+      }));
   },
 });
 

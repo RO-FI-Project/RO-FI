@@ -7,18 +7,22 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { PermissionGate } from "@/components/admin/PermissionGate";
 import { hasPermission, parseRole } from "@/lib/rbac";
+import { toast } from "sonner";
 
 const ideaStatuses = ["new", "reviewing", "approved", "declined"] as const;
 
 export default function FanIdeasAdminPage() {
   const { user } = useUser();
   const [statusFilter, setStatusFilter] = useState<"all" | (typeof ideaStatuses)[number]>("all");
+  const [deletingId, setDeletingId] = useState<Id<"fanIdeas"> | null>(null);
   const ideas = useQuery(api.fanIdeasAdmin.list, {
     status: statusFilter === "all" ? undefined : statusFilter,
   });
   const updateStatus = useMutation(api.fanIdeasAdmin.updateStatus);
+  const removeIdea = useMutation(api.fanIdeasAdmin.remove);
   const logAction = useMutation(api.adminAudit.logAction);
   const role = parseRole(user?.publicMetadata?.role);
   const canWrite = hasPermission(role, "fanIdeas.write");
@@ -26,15 +30,45 @@ export default function FanIdeasAdminPage() {
   const sortedIdeas = useMemo(() => ideas ?? [], [ideas]);
 
   const handleStatusChange = async (id: Id<"fanIdeas">, status: (typeof ideaStatuses)[number]) => {
-    await updateStatus({ id, status });
-    await logAction({
-      actorEmail: user?.primaryEmailAddress?.emailAddress ?? "unknown",
-      actorRole: (user?.publicMetadata?.role as string | undefined) ?? "unknown",
-      action: "update",
-      resource: "fanIdea",
-      resourceId: String(id),
-      after: JSON.stringify({ status }),
-    });
+    try {
+      await updateStatus({ id, status });
+      await logAction({
+        actorEmail: user?.primaryEmailAddress?.emailAddress ?? "unknown",
+        actorRole: (user?.publicMetadata?.role as string | undefined) ?? "unknown",
+        action: "update",
+        resource: "fanIdea",
+        resourceId: String(id),
+        after: JSON.stringify({ status }),
+      });
+      toast.success("Đã cập nhật trạng thái ý tưởng.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Lỗi không xác định.";
+      toast.error(message);
+    }
+  };
+
+  const handleDelete = async (id: Id<"fanIdeas">) => {
+    if (!canWrite || deletingId) return;
+    const confirmed = window.confirm("Bạn có chắc muốn xóa vĩnh viễn ý tưởng này?");
+    if (!confirmed) return;
+
+    setDeletingId(id);
+    try {
+      await removeIdea({ id });
+      await logAction({
+        actorEmail: user?.primaryEmailAddress?.emailAddress ?? "unknown",
+        actorRole: (user?.publicMetadata?.role as string | undefined) ?? "unknown",
+        action: "delete",
+        resource: "fanIdea",
+        resourceId: String(id),
+      });
+      toast.success("Đã xóa ý tưởng.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Lỗi không xác định.";
+      toast.error(message);
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   return (
@@ -94,6 +128,14 @@ export default function FanIdeasAdminPage() {
                         </option>
                       ))}
                     </select>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      disabled={!canWrite || deletingId === idea._id}
+                      onClick={() => handleDelete(idea._id)}
+                    >
+                      {deletingId === idea._id ? "Đang xóa..." : "Xóa"}
+                    </Button>
                   </div>
                 </div>
               ))

@@ -33,3 +33,17 @@ export const updateStatus = mutationGeneric({
     await ctx.db.patch(args.id, { status: args.status });
   },
 });
+
+export const remove = mutationGeneric({
+  args: {
+    id: v.id("fanIdeas"),
+  },
+  handler: async (ctx, args) => {
+    const idea = await ctx.db.get(args.id);
+    if (!idea) {
+      throw new Error("Ý tưởng không tồn tại.");
+    }
+
+    await ctx.db.delete(args.id);
+  },
+});

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import type { Id } from "@/convex/_generated/dataModel";
 import { api } from "@/convex/_generated/api";
@@ -9,7 +9,8 @@ import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Sparkles, Heart, Send } from "lucide-react";
 import { toast } from "sonner";
 
@@ -20,15 +21,27 @@ type FanIdeaPayload = {
   proposedDate: string;
 };
 
+type SubmissionStatus = {
+  id: Id<"fanIdeas">;
+  createdAt: number;
+};
+
+const submissionStorageKey = "rf_fan_idea_submissions";
+
 export default function FanIdeasPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [likePendingId, setLikePendingId] = useState<Id<"fanIdeas"> | null>(null);
   const [likedMap, setLikedMap] = useState<Record<string, boolean>>({});
+  const [submissionIds, setSubmissionIds] = useState<Id<"fanIdeas">[]>([]);
   const formRef = useRef<HTMLFormElement | null>(null);
   const submitIdea = useMutation(api.fanIdeas.submit);
   const incrementLike = useMutation(api.fanIdeas.incrementLike);
   const decrementLike = useMutation(api.fanIdeas.decrementLike);
   const ideas = useQuery(api.fanIdeas.listPublicRecent, { limit: 12 });
+  const mySubmissions = useQuery(
+    api.fanIdeas.listByIdsPublicStatus,
+    submissionIds.length > 0 ? { ids: submissionIds, limit: 10 } : "skip"
+  );
   const todayIso = new Date().toISOString().slice(0, 10);
   const likeStorageKey = "rf_fan_idea_likes";
 
@@ -50,6 +63,30 @@ export default function FanIdeasPage() {
       setLikedMap({});
     }
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem(submissionStorageKey);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as SubmissionStatus[];
+      if (!Array.isArray(parsed)) return;
+
+      const nextIds = parsed
+        .filter(
+          (entry): entry is SubmissionStatus =>
+            Boolean(entry) && typeof entry === "object" && typeof entry.id === "string"
+        )
+        .sort((left, right) => right.createdAt - left.createdAt)
+        .map((entry) => entry.id);
+
+      setSubmissionIds(nextIds);
+    } catch {
+      setSubmissionIds([]);
+    }
+  }, []);
+
+  const mySubmissionItems = useMemo(() => mySubmissions ?? [], [mySubmissions]);
 
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -78,8 +115,34 @@ export default function FanIdeasPage() {
     }
 
     try {
-      await submitIdea(payload);
-      toast.success("Idea sent! RF will review and update soon.");
+      const ideaId = await submitIdea(payload);
+      const nextEntries: SubmissionStatus[] = [{ id: ideaId, createdAt: Date.now() }];
+
+      if (typeof window !== "undefined") {
+        try {
+          const raw = window.localStorage.getItem(submissionStorageKey);
+          const parsed = raw ? (JSON.parse(raw) as SubmissionStatus[]) : [];
+          if (Array.isArray(parsed)) {
+            nextEntries.push(
+              ...parsed.filter(
+                (entry): entry is SubmissionStatus =>
+                  Boolean(entry) &&
+                  typeof entry === "object" &&
+                  typeof entry.id === "string" &&
+                  entry.id !== ideaId
+              )
+            );
+          }
+        } catch {
+          // noop
+        }
+
+        const trimmedEntries = nextEntries.slice(0, 10);
+        window.localStorage.setItem(submissionStorageKey, JSON.stringify(trimmedEntries));
+        setSubmissionIds(trimmedEntries.map((entry) => entry.id));
+      }
+
+      toast.success("Idea sent! You can track its status below.");
       form.reset();
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unexpected error.";
@@ -139,6 +202,35 @@ export default function FanIdeasPage() {
                   Recent Ideas
                 </h2>
               </div>
+
+              <Card className="border-primary/10 bg-white/70">
+                <CardHeader>
+                  <CardTitle className="text-xl font-display">Your recent submissions</CardTitle>
+                  <CardDescription>Track whether your latest idea is being reviewed or approved.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {mySubmissionItems.length > 0 ? (
+                    mySubmissionItems.map((idea) => (
+                      <div
+                        key={idea._id}
+                        className="flex items-center justify-between gap-3 rounded-2xl border border-primary/10 px-4 py-3"
+                      >
+                        <div>
+                          <p className="font-medium text-foreground">{idea.title?.trim() || "Untitled Idea"}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(idea.createdAt).toLocaleString("en-US")}
+                          </p>
+                        </div>
+                        <Badge className="rounded-full">{idea.status}</Badge>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Submit an idea to start tracking its review status here.
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
 
               {ideas && ideas.length > 0 ? (
                 <div className="grid sm:grid-cols-2 gap-6">
