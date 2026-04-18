@@ -2,45 +2,104 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
+import Image from "next/image";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dices, Disc3, Pause, Play, Sparkles } from "lucide-react";
+import { Dices, Disc3, ExternalLink, Pause, Play, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { SingerAvatar } from "@/components/music-room/SingerAvatar";
 import {
+  type MusicRoomSong,
   type MusicRoomState,
   type RollHistoryItem,
-  getDefaultMusicRoomState,
+  getFreshCachedYouTubeSongs,
   getSongById,
+  loadCachedYouTubeSongs,
   loadMusicRoomState,
-  musicRoomSongs,
+  normalizeYouTubeSongs,
   rollWeightedSong,
+  saveCachedYouTubeSongs,
   saveMusicRoomState,
 } from "@/lib/music-room";
 
 export default function MusicRoomPage() {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const rollTimerRef = useRef<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [beatLevel, setBeatLevel] = useState(0);
-  const [musicRoomState, setMusicRoomState] = useState<MusicRoomState>(getDefaultMusicRoomState);
+  const [songs, setSongs] = useState<MusicRoomSong[]>([]);
+  const [isLoadingSongs, setIsLoadingSongs] = useState(true);
+  const [musicRoomState, setMusicRoomState] = useState<MusicRoomState>({ lastSongId: "", rollHistory: [] });
   const [isRolling, setIsRolling] = useState(false);
   const [gachaResult, setGachaResult] = useState<{ title: string; rarity: string } | null>(null);
+  const [playerNonce, setPlayerNonce] = useState(0);
   const currentSong = useMemo(
-    () => getSongById(musicRoomState.lastSongId) ?? musicRoomSongs[0],
-    [musicRoomState.lastSongId]
+    () => getSongById(musicRoomState.lastSongId, songs),
+    [musicRoomState.lastSongId, songs]
   );
   const singerState = isRolling ? "excited" : isPlaying ? "singing" : "idle";
 
   useEffect(() => {
-    setMusicRoomState(loadMusicRoomState());
+    const bootstrapSongs = async () => {
+      const freshCache = getFreshCachedYouTubeSongs();
+      if (freshCache.length > 0) {
+        setSongs(freshCache);
+        setMusicRoomState(loadMusicRoomState(freshCache));
+        setIsLoadingSongs(false);
+        return;
+      }
+
+      const fallbackCache = loadCachedYouTubeSongs();
+      if (fallbackCache.length > 0) {
+        setSongs(fallbackCache);
+        setMusicRoomState(loadMusicRoomState(fallbackCache));
+      }
+
+      try {
+        const response = await fetch("/api/music-room/youtube", { cache: "no-store" });
+        if (!response.ok) {
+          throw new Error("Không thể tải danh sách nhạc từ YouTube.");
+        }
+
+        const data = (await response.json()) as {
+          videos?: Array<{
+            videoId: string;
+            title: string;
+            thumbnail: string;
+            publishedAt: string;
+            durationSec: number;
+            youtubeWatchUrl: string;
+            youtubeEmbedUrl: string;
+          }>;
+        };
+        const normalizedSongs = normalizeYouTubeSongs(data.videos ?? []);
+        if (normalizedSongs.length === 0) {
+          throw new Error("Kênh chưa có video phù hợp để phát.");
+        }
+
+        setSongs(normalizedSongs);
+        setMusicRoomState(loadMusicRoomState(normalizedSongs));
+        saveCachedYouTubeSongs(normalizedSongs);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Không thể tải nhạc từ YouTube.";
+        if (fallbackCache.length === 0) {
+          toast.error(message);
+        } else {
+          toast.error("Dùng cache cũ vì YouTube API hiện không phản hồi.");
+        }
+      } finally {
+        setIsLoadingSongs(false);
+      }
+    };
+
+    void bootstrapSongs();
   }, []);
 
   useEffect(() => {
+    if (songs.length === 0) return;
     saveMusicRoomState(musicRoomState);
-  }, [musicRoomState]);
+  }, [musicRoomState, songs.length]);
 
   useEffect(() => {
     if (!isPlaying) {
@@ -64,25 +123,19 @@ export default function MusicRoomPage() {
   }, []);
 
   const playCurrentSong = async () => {
-    if (!audioRef.current) return;
-    try {
-      audioRef.current.load();
-      await audioRef.current.play();
-      setIsPlaying(true);
-    } catch {
-      setIsPlaying(false);
-      toast.error("Không thể phát bài hát mẫu. Hãy thêm audio file vào public/audio/music-room.");
-    }
+    if (!currentSong) return;
+    setPlayerNonce((value) => value + 1);
+    setIsPlaying(true);
   };
 
   const rollGacha = () => {
-    if (isRolling) return;
+    if (isRolling || songs.length === 0) return;
     setIsRolling(true);
     setGachaResult(null);
 
     rollTimerRef.current = window.setTimeout(() => {
       setMusicRoomState((prev) => {
-        const { song, rarity } = rollWeightedSong();
+        const { song, rarity } = rollWeightedSong(songs);
         const nextHistory: RollHistoryItem[] = [
           { songId: song.id, rarity, rolledAt: Date.now() },
           ...prev.rollHistory,
@@ -105,21 +158,14 @@ export default function MusicRoomPage() {
   };
 
   const togglePlayback = async () => {
-    const audio = audioRef.current;
-    if (!audio) return;
+    if (!currentSong) return;
 
     if (isPlaying) {
-      audio.pause();
       setIsPlaying(false);
       return;
     }
 
-    try {
-      await audio.play();
-      setIsPlaying(true);
-    } catch {
-      toast.error("Không thể tiếp tục phát bài hát.");
-    }
+    await playCurrentSong();
   };
 
   return (
@@ -137,7 +183,7 @@ export default function MusicRoomPage() {
               Music Room
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Roll a chill track, let the virtual singer perform, and keep your cozy listening history for this device.
+              Relax with RosaFlora's public YouTube tracks, a soft singer animation, and a playful music gacha.
             </p>
           </div>
 
@@ -150,34 +196,56 @@ export default function MusicRoomPage() {
                   <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">
                     Now Playing
                   </p>
-                  <p className="font-display font-semibold text-foreground truncate w-56">{currentSong.title}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{currentSong.theme}</p>
+                  <p className="font-display font-semibold text-foreground truncate w-56">{currentSong?.title ?? "Loading..."}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{currentSong?.theme ?? "Đang tải playlist từ YouTube"}</p>
                 </div>
                 <div className="flex items-center gap-4">
                   <Button
                     size="icon"
                     className="w-12 h-12 rounded-full shadow-md shadow-primary/20"
                     onClick={togglePlayback}
+                    disabled={!currentSong}
                   >
                     {isPlaying ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 fill-current ml-1" />}
                   </Button>
-                  <Badge className="rounded-full">{currentSong.rarity}</Badge>
-                  <Badge variant="secondary" className="rounded-full">
-                    {currentSong.durationLabel}
-                  </Badge>
+                  {currentSong ? <Badge className="rounded-full">{currentSong.rarity}</Badge> : null}
+                  {currentSong ? (
+                    <Badge variant="secondary" className="rounded-full">
+                      {currentSong.durationLabel}
+                    </Badge>
+                  ) : null}
                 </div>
-                <audio
-                  ref={audioRef}
-                  src={currentSong.src}
-                  preload="none"
-                  onPlay={() => setIsPlaying(true)}
-                  onPause={() => setIsPlaying(false)}
-                  onEnded={() => setIsPlaying(false)}
-                  onError={() => {
-                    setIsPlaying(false);
-                    toast.error("Không tìm thấy audio demo cho bài hát này.");
-                  }}
-                />
+                {currentSong ? (
+                  <div className="w-full space-y-3">
+                    <div className="relative aspect-video overflow-hidden rounded-2xl border border-primary/10 bg-black">
+                      <iframe
+                        key={`${currentSong.videoId}-${playerNonce}-${isPlaying ? "play" : "pause"}`}
+                        src={
+                          isPlaying
+                            ? currentSong.youtubeEmbedUrl
+                            : `${currentSong.youtubeEmbedUrl.replace("autoplay=1", "autoplay=0")}`
+                        }
+                        title={currentSong.title}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        referrerPolicy="strict-origin-when-cross-origin"
+                        allowFullScreen
+                        className="absolute inset-0 h-full w-full"
+                      />
+                    </div>
+                    <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                      <span className="truncate">Nguồn: {process.env.NEXT_PUBLIC_YOUTUBE_CHANNEL_HANDLE ?? "@RosaFlora-358"}</span>
+                      <a
+                        href={currentSong.youtubeWatchUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 text-primary"
+                      >
+                        Open on YouTube
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </div>
+                  </div>
+                ) : null}
               </div>
             </div>
 
@@ -188,7 +256,7 @@ export default function MusicRoomPage() {
                 </div>
                 <h2 className="font-display text-2xl font-semibold mb-2">Music Gacha</h2>
                 <p className="text-muted-foreground mb-6 text-sm">
-                  Roll a random chill track. Super Rare pulls will feel like a little encore reward.
+                  Roll a random public track from RosaFlora's channel. Newer uploads get the rarest spotlight.
                 </p>
 
                 <div className="h-32 w-full flex items-center justify-center mb-6">
@@ -227,17 +295,38 @@ export default function MusicRoomPage() {
                   size="lg"
                   className="w-full rounded-xl h-14 text-lg font-semibold shadow-lg shadow-primary/20"
                   onClick={rollGacha}
-                  disabled={isRolling}
+                  disabled={isRolling || isLoadingSongs || songs.length === 0}
                 >
-                  {isRolling ? "Rolling..." : "Roll Gacha"}
+                  {isLoadingSongs ? "Loading..." : isRolling ? "Rolling..." : "Roll Gacha"}
                 </Button>
+
+                {currentSong ? (
+                  <div className="mt-4 w-full rounded-2xl border border-primary/10 bg-white/80 p-3 text-left">
+                    <div className="flex items-center gap-3">
+                      <div className="relative h-16 w-24 overflow-hidden rounded-xl border border-primary/10">
+                        <Image
+                          src={currentSong.thumbnail}
+                          alt={currentSong.title}
+                          fill
+                          sizes="96px"
+                          className="object-cover"
+                          unoptimized
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate font-medium text-foreground">{currentSong.title}</p>
+                        <p className="text-xs text-muted-foreground">{currentSong.durationLabel}</p>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
 
                 <div className="mt-6 w-full rounded-2xl border border-primary/10 bg-white/70 p-4 text-left">
                   <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Recent rolls</p>
                   <div className="mt-3 space-y-2">
                     {musicRoomState.rollHistory.length > 0 ? (
                       musicRoomState.rollHistory.slice(0, 4).map((item) => {
-                        const song = getSongById(item.songId);
+                        const song = getSongById(item.songId, songs);
                         return (
                           <div key={`${item.songId}-${item.rolledAt}`} className="flex items-center justify-between gap-3 text-sm">
                             <div className="min-w-0">
@@ -257,6 +346,12 @@ export default function MusicRoomPage() {
                     )}
                   </div>
                 </div>
+
+                {songs.length === 0 && !isLoadingSongs ? (
+                  <p className="mt-4 text-sm text-muted-foreground">
+                    Chưa có video phù hợp từ YouTube hoặc cache cũ trống.
+                  </p>
+                ) : null}
               </div>
             </div>
           </div>
